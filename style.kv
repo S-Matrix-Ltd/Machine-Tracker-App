@@ -1,0 +1,162 @@
+#:import T theme
+#:import dp kivy.metrics.dp
+
+<IconLabel@Label>:
+    font_name: "Icons"
+    color: T.TEXT_PRIMARY
+    halign: "center"
+    valign: "middle"
+    text_size: self.size
+
+<ThemedCard>:
+    orientation: "vertical"
+    size_hint_x: 1
+    size_hint_y: None
+    height: self.minimum_height
+    padding: dp(14)
+    spacing: dp(8)
+    canvas.before:
+        Color:
+            rgba: T.CARD_COLOR
+        RoundedRectangle:
+            pos: self.pos
+            size: self.size
+            radius: [T.RADIUS_CARD]
+        Color:
+            rgba: T.BORDER_COLOR
+        Line:
+            rounded_rectangle: (self.x, self.y, self.width, self.height, T.RADIUS_CARD)
+            width: 1
+
+<StatusChip>:
+    size_hint: None, None
+    height: dp(24)
+    width: self.minimum_width
+    padding: [dp(8), dp(2)]
+    spacing: dp(5)
+    canvas.before:
+        Color:
+            rgba: root.bg_rgba
+        RoundedRectangle:
+            pos: self.pos
+            size: self.size
+            radius: [dp(6)]
+    Widget:
+        size_hint: None, None
+        size: dp(6), dp(6)
+        pos_hint: {"center_y": 0.5}
+        canvas:
+            Color:
+                rgba: root.dot_rgba
+            Ellipse:
+                pos: self.pos
+                size: self.size
+    Label:
+        text: root.chip_text
+        font_size: T.FONT_CAPTION
+        bold: True
+        color: root.dot_rgba
+        size_hint: None, None
+        size: self.texture_size
+        pos_hint: {"center_y": 0.5}
+
+<StatTile>:
+    orientation: "vertical"
+    size_hint_x: 1
+    size_hint_y: None
+    height: self.minimum_height
+    padding: dp(14)
+    spacing: dp(10)
+    canvas.before:
+        Color:
+            rgba: T.CARD_COLOR
+        RoundedRectangle:
+            pos: self.pos
+            size: self.size
+            radius: [T.RADIUS_CARD]
+        Color:
+            rgba: T.BORDER_COLOR
+        Line:
+            rounded_rectangle: (self.x, self.y, self.width, self.height, T.RADIUS_CARD)
+            width: 1
+    BoxLayout:
+        size_hint_y: None
+        height: dp(36)
+        Widget:
+            size_hint: None, None
+            size: dp(36), dp(36)
+            canvas.before:
+                Color:
+                    rgba: root.tint_rgba
+                Ellipse:
+                    pos: self.pos
+                    size: self.size
+            IconLabel:
+                pos: self.parent.pos
+                size: self.parent.size
+                text: root.icon_char
+                font_size: dp(18)
+                color: root.status_rgba
+        Widget:
+        Widget:
+            size_hint: None, None
+            size: dp(8), dp(8)
+            pos_hint: {"top": 0.85}
+            canvas:
+                Color:
+                    rgba: root.status_rgba
+                Ellipse:
+                    pos: self.pos
+                    size: self.size
+    Label:
+        text: root.count_text
+        font_size: T.FONT_BIG_NUM
+        bold: True
+        color: T.TEXT_PRIMARY
+        size_hint_y: None
+        height: self.texture_size[1] + dp(4)
+        text_size: self.width, None
+        halign: "left"
+    Label:
+        text: root.label_text
+        font_size: T.FONT_BODY
+        color: T.TEXT_MUTED
+        size_hint_y: None
+        height: self.texture_size[1] + dp(2)
+        text_size: self.width, None
+        halign: "left"
+
+<QuickAction>:
+    orientation: "vertical"
+    size_hint_x: 1
+    size_hint_y: None
+    height: dp(74)
+    padding: [dp(4), dp(10)]
+    spacing: dp(6)
+    canvas.before:
+        Color:
+            rgba: T.CARD_COLOR
+        RoundedRectangle:
+            pos: self.pos
+            size: self.size
+            radius: [dp(12)]
+        Color:
+            rgba: T.BORDER_COLOR
+        Line:
+            rounded_rectangle: (self.x, self.y, self.width, self.height, dp(12))
+            width: 1
+    IconLabel:
+        text: root.icon_char
+        font_size: dp(22)
+        color: T.TEXT_PRIMARY
+        size_hint_y: None
+        height: dp(26)
+    Label:
+        text: root.title_text
+        font_size: T.FONT_CAPTION
+        color: T.TEXT_MUTED
+        halign: "center"
+        valign: "middle"
+        text_size: self.width, None
+        size_hint_y: None
+        height: self.texture_size[1] + dp(2)
