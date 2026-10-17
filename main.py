@@ -13,35 +13,36 @@ from kivy.uix.popup import Popup
 from kivy.graphics import Color, RoundedRectangle
 from kivy.metrics import dp
 
-MACHINES = [
-    {"sl": 1, "name": "Brevetti", "id": "K02PR-095", "prod": "Cefixime 200mg Amp", "batch": "B26-1041"},
-    {"sl": 2, "name": "Körber", "id": "K02PR-089", "prod": "Pantoprazole 40mg IV", "batch": "B26-1042"},
-    {"sl": 3, "name": "Light Inspection 01", "id": "K02PR-137", "prod": "Ondansetron 8mg Inj", "batch": "B26-1039"},
-    {"sl": 4, "name": "Light Inspection 02", "id": "K02PR-138", "prod": "Ketorolac 30mg Amp", "batch": "B26-1045"},
-    {"sl": 5, "name": "PDLD", "id": "K02PR-134", "prod": "Cefixime 200mg Amp", "batch": "B26-1041"},
-    {"sl": 6, "name": "Ampoule Labeling 01", "id": "K02PR-106", "prod": "Dexamethasone 5mg", "batch": "B26-1048"},
-    {"sl": 7, "name": "Conveyor Belt 04", "id": "K02PR-133", "prod": "Line 04 Transfer", "batch": "B26-1041"},
-    {"sl": 8, "name": "Blister & Cartooning", "id": "K02PR-111", "prod": "Esomeprazole 20mg", "batch": "B26-1050"},
-    {"sl": 9, "name": "Conveyor Belt 01", "id": "K02PR-130", "prod": "Line 01 Transfer", "batch": "B26-1042"},
-    {"sl": 10, "name": "Checkweigher 01", "id": "K02PR-143", "prod": "Pantoprazole 40mg IV", "batch": "B26-1042"},
-    {"sl": 11, "name": "Vail Labeling 02", "id": "K02PR-108", "prod": "Meropenem 1g Vial", "batch": "B26-1052"},
-    {"sl": 12, "name": "Conveyor Belt 03", "id": "K02PR-132", "prod": "Line 03 Transfer", "batch": "B26-1052"},
-    {"sl": 13, "name": "Washing and Drying", "id": "K02PR-135", "prod": "Sterile Vial Prep", "batch": "B26-1055"},
-    {"sl": 14, "name": "Vail Labeling 01", "id": "K02PR-107", "prod": "Ceftriaxone 1g Vial", "batch": "B26-1054"},
-    {"sl": 15, "name": "Conveyor Belt 02", "id": "K02PR-131", "prod": "Line 02 Transfer", "batch": "B26-1054"},
-    {"sl": 16, "name": "IFC Printer- (Morico)", "id": "K02PR-136", "prod": "Ceftriaxone Outer", "batch": "B26-1054"},
-    {"sl": 17, "name": "NKP 01", "id": "K02PR-128", "prod": "Ceftriaxone 1g Vial", "batch": "B26-1054"},
-    {"sl": 18, "name": "NKP 02", "id": "K02PR-129", "prod": "Meropenem 1g Vial", "batch": "B26-1052"},
+INITIAL_MACHINES = [
+    {"sl": 1, "name": "Brevetti", "id": "K02PR-095", "prod": "Cefixime 200mg Amp", "batch": "B26-1041", "pm_due": "Due in 2 Days"},
+    {"sl": 2, "name": "Körber", "id": "K02PR-089", "prod": "Pantoprazole 40mg IV", "batch": "B26-1042", "pm_due": "OK"},
+    {"sl": 3, "name": "Light Inspection 01", "id": "K02PR-137", "prod": "Ondansetron 8mg Inj", "batch": "B26-1039", "pm_due": "OVERDUE"},
+    {"sl": 4, "name": "Light Inspection 02", "id": "K02PR-138", "prod": "Ketorolac 30mg Amp", "batch": "B26-1045", "pm_due": "OK"},
+    {"sl": 5, "name": "PDLD", "id": "K02PR-134", "prod": "Cefixime 200mg Amp", "batch": "B26-1041", "pm_due": "OK"},
+    {"sl": 6, "name": "Ampoule Labeling 01", "id": "K02PR-106", "prod": "Dexamethasone 5mg", "batch": "B26-1048", "pm_due": "OVERDUE"},
+    {"sl": 7, "name": "Conveyor Belt 04", "id": "K02PR-133", "prod": "Line 04 Transfer", "batch": "B26-1041", "pm_due": "OK"},
+    {"sl": 8, "name": "Blister & Cartooning", "id": "K02PR-111", "prod": "Esomeprazole 20mg", "batch": "B26-1050", "pm_due": "Due Tomorrow"},
+    {"sl": 9, "name": "Conveyor Belt 01", "id": "K02PR-130", "prod": "Line 01 Transfer", "batch": "B26-1042", "pm_due": "OK"},
+    {"sl": 10, "name": "Checkweigher 01", "id": "K02PR-143", "prod": "Pantoprazole 40mg IV", "batch": "B26-1042", "pm_due": "OK"},
+    {"sl": 11, "name": "Vail Labeling 02", "id": "K02PR-108", "prod": "Meropenem 1g Vial", "batch": "B26-1052", "pm_due": "OK"},
+    {"sl": 12, "name": "Conveyor Belt 03", "id": "K02PR-132", "prod": "Line 03 Transfer", "batch": "B26-1052", "pm_due": "OK"},
+    {"sl": 13, "name": "Washing and Drying", "id": "K02PR-135", "prod": "Sterile Vial Prep", "batch": "B26-1055", "pm_due": "OVERDUE"},
+    {"sl": 14, "name": "Vail Labeling 01", "id": "K02PR-107", "prod": "Ceftriaxone 1g Vial", "batch": "B26-1054", "pm_due": "OK"},
+    {"sl": 15, "name": "Conveyor Belt 02", "id": "K02PR-131", "prod": "Line 02 Transfer", "batch": "B26-1054", "pm_due": "OK"},
+    {"sl": 16, "name": "IFC Printer- (Morico)", "id": "K02PR-136", "prod": "Ceftriaxone Outer", "batch": "B26-1054", "pm_due": "Due in 3 Days"},
+    {"sl": 17, "name": "NKP 01", "id": "K02PR-128", "prod": "Ceftriaxone 1g Vial", "batch": "B26-1054", "pm_due": "OK"},
+    {"sl": 18, "name": "NKP 02", "id": "K02PR-129", "prod": "Meropenem 1g Vial", "batch": "B26-1052", "pm_due": "OK"},
 ]
 
 
 class CardBox(BoxLayout):
-    def __init__(self, bg_color=(0.09, 0.13, 0.20, 1), **kwargs):
+    def __init__(self, bg_color=(0.09, 0.13, 0.20, 1), radius_val=12, **kwargs):
         super().__init__(**kwargs)
         self.bg_color = bg_color
+        self.radius_val = radius_val
         with self.canvas.before:
             Color(*self.bg_color)
-            self.rect = RoundedRectangle(pos=self.pos, size=self.size, radius=[dp(10)])
+            self.rect = RoundedRectangle(pos=self.pos, size=self.size, radius=[dp(self.radius_val)])
         self.bind(pos=self.update_rect, size=self.update_rect)
 
     def update_rect(self, *args):
@@ -51,51 +52,43 @@ class CardBox(BoxLayout):
 
 class MachineTrackerApp(App):
     def build(self):
-        self.title = "Smart Eng-Ops Logbook"
-        self.data_file = os.path.join(self.user_data_dir, "eng_machine_logs.json")
+        self.title = "Smart Eng-Ops Hub"
+        self.data_file = os.path.join(self.user_data_dir, "smart_eng_v2.json")
         self.load_data()
-        self.selected_machine_id = MACHINES[0]["id"]
+        self.selected_machine_id = self.db["machine_order"][0]
 
         self.root_layout = BoxLayout(orientation="vertical", padding=dp(8), spacing=dp(8))
         with self.root_layout.canvas.before:
-            Color(0.04, 0.06, 0.11, 1)
+            Color(0.04, 0.06, 0.10, 1)
             self.bg_rect = RoundedRectangle(pos=self.root_layout.pos, size=self.root_layout.size)
         self.root_layout.bind(pos=self._update_bg, size=self._update_bg)
 
-        # Top Header
-        header = CardBox(orientation="vertical", size_hint_y=None, height=dp(68), padding=dp(8), bg_color=(0.06, 0.18, 0.28, 1))
-        header.add_widget(Label(text="SMART ENG-OPS & BREAKDOWN LOGBOOK", font_size="16sp", bold=True, color=(0.2, 0.9, 1, 1)))
-        self.kpi_label = Label(text="", font_size="12sp", color=(0.8, 0.9, 0.8, 1))
-        header.add_widget(self.kpi_label)
-        self.root_layout.add_widget(header)
-
-        # Navigation Tabs
-        nav = GridLayout(cols=4, size_hint_y=None, height=dp(42), spacing=dp(5))
-        self.btn_tab_machines = Button(text="1. Machines", background_color=(0.1, 0.7, 0.9, 1), bold=True, font_size="12sp")
-        self.btn_tab_entry = Button(text="2. 2Hr Entry", background_color=(0.2, 0.25, 0.35, 1), font_size="12sp")
-        self.btn_tab_bd = Button(text="3. Breakdown", background_color=(0.2, 0.25, 0.35, 1), font_size="12sp")
-        self.btn_tab_streak = Button(text="4. Streak", background_color=(0.2, 0.25, 0.35, 1), font_size="12sp")
-
-        self.btn_tab_machines.bind(on_release=lambda x: self.switch_tab("MACHINES"))
-        self.btn_tab_entry.bind(on_release=lambda x: self.switch_tab("ENTRY"))
-        self.btn_tab_bd.bind(on_release=lambda x: self.switch_tab("BREAKDOWN"))
-        self.btn_tab_streak.bind(on_release=lambda x: self.switch_tab("STREAK"))
-
-        nav.add_widget(self.btn_tab_machines)
-        nav.add_widget(self.btn_tab_entry)
-        nav.add_widget(self.btn_tab_bd)
-        nav.add_widget(self.btn_tab_streak)
-        self.root_layout.add_widget(nav)
-
-        # Dynamic Content Area
+        # Dynamic Scrollable Area
         self.content_scroll = ScrollView(do_scroll_x=False)
-        self.content_box = BoxLayout(orientation="vertical", size_hint_y=None, spacing=dp(8), padding=[0, dp(4), 0, dp(20)])
+        self.content_box = BoxLayout(orientation="vertical", size_hint_y=None, spacing=dp(10), padding=[0, dp(2), 0, dp(24)])
         self.content_box.bind(minimum_height=self.content_box.setter("height"))
         self.content_scroll.add_widget(self.content_box)
         self.root_layout.add_widget(self.content_scroll)
 
-        self.update_kpis()
-        self.switch_tab("MACHINES")
+        # Bottom Navigation Bar (Mobile Optimized)
+        nav = GridLayout(cols=4, size_hint_y=None, height=dp(48), spacing=dp(6))
+        self.btn_home = Button(text="Home", bold=True, font_size="12sp", background_color=(0.1, 0.65, 0.9, 1))
+        self.btn_machines = Button(text="Machines", font_size="12sp", background_color=(0.16, 0.22, 0.32, 1))
+        self.btn_bd = Button(text="CAPA Log", font_size="12sp", background_color=(0.16, 0.22, 0.32, 1))
+        self.btn_settings = Button(text="Settings", font_size="12sp", background_color=(0.16, 0.22, 0.32, 1))
+
+        self.btn_home.bind(on_release=lambda x: self.switch_tab("HOME"))
+        self.btn_machines.bind(on_release=lambda x: self.switch_tab("MACHINES"))
+        self.btn_bd.bind(on_release=lambda x: self.switch_tab("CAPA"))
+        self.btn_settings.bind(on_release=lambda x: self.switch_tab("SETTINGS"))
+
+        nav.add_widget(self.btn_home)
+        nav.add_widget(self.btn_machines)
+        nav.add_widget(self.btn_bd)
+        nav.add_widget(self.btn_settings)
+        self.root_layout.add_widget(nav)
+
+        self.switch_tab("HOME")
         return self.root_layout
 
     def _update_bg(self, *args):
@@ -111,42 +104,50 @@ class MachineTrackerApp(App):
             except Exception:
                 pass
 
-        self.db = {"machines": {}, "breakdowns": []}
-        for idx, m in enumerate(MACHINES):
-            self.db["machines"][m["id"]] = {
-                "name": m["name"],
+        self.db = {
+            "settings": {
+                "user_name": "Engr. Ahmeed Sunny",
+                "designation": "Senior Maintenance & Automation Engineer",
+                "shift": "Shift A (06:00 - 14:00)",
+                "plant_name": "Sterile & Packaging Unit - Oct 2026"
+            },
+            "machine_order": [],
+            "machines": {},
+            "capa_logs": []
+        }
+
+        for idx, m in enumerate(INITIAL_MACHINES):
+            mid = m["id"]
+            self.db["machine_order"].append(mid)
+            status = "RUNNING"
+            if idx == 5:
+                status = "BREAKDOWN"
+            elif idx == 12:
+                status = "MAINTENANCE"
+            elif idx in (6, 14):
+                status = "IDLE"
+
+            self.db["machines"][mid] = {
                 "sl": m["sl"],
-                "status": "RUNNING" if idx != 5 else "BREAKDOWN",
+                "name": m["name"],
+                "id": mid,
+                "status": status,
                 "product": m["prod"],
                 "batch": m["batch"],
-                "output_2hr": 18500 + (idx * 400),
-                "reject_2hr": 15 + idx,
-                "rpm": 320,
-                "temp": 44,
-                "operator": "Md. Tanvir (Op-A)",
-                "engineer": "Engr. Ahmeed Sunny",
-                "issue_note": "Smooth operation" if idx != 5 else "Label gap sensor intermittent trigger",
-                "streak": 12 + (idx % 5),
-                "hours_logged": 16 + (idx % 6)
+                "had_issue": "YES" if idx in (5, 12) else "NO",
+                "issue_details": "Label sensor false trigger & glue buildup" if idx == 5 else "Smooth operation, no abnormality",
+                "new_parts_count": "2" if idx == 5 else "0",
+                "parts_names": "Optical Fiber Head x1, Guide Roller x1" if idx == 5 else "None",
+                "std_batch_time": "6.0 Hours",
+                "actual_batch_time": "7.5 Hours" if idx == 5 else "5.8 Hours",
+                "delay_reason": "1.5 hrs extra due to label roll splicing & sensor recalibration" if idx == 5 else "Completed within standard time",
+                "operator_name": "Md. Tanvir (Op-A)" if idx % 2 == 0 else "Sohag Mia (Op-B)",
+                "officer_name": "Officer Kamrul Hasan" if idx % 2 == 0 else "Officer Rashedul Islam",
+                "pm_status": m["pm_due"],
+                "last_pm_date": "2026-10-02",
+                "batch_history": []
             }
 
-        self.db["breakdowns"] = [
-            {
-                "machine_id": "K02PR-106",
-                "machine_name": "Ampoule Labeling 01",
-                "date": "2026-10-17",
-                "start_time": "09:15",
-                "end_time": "09:50",
-                "batch": "B26-1048",
-                "issue": "Label gap optical sensor false trigger at >320 RPM",
-                "root_cause": "Adhesive residue buildup on sensor lens",
-                "action": "Cleaned optical sensor with IPA & recalibrated threshold",
-                "advice": "Wipe roller & sensor head every 4 hours during batch run",
-                "param_change": "Sensor sensitivity 62% -> 75%",
-                "parts": "Optical cleaning swab x2",
-                "person": "Engr. Ahmeed Sunny"
-            }
-        ]
         self.save_data()
 
     def save_data(self):
@@ -155,243 +156,523 @@ class MachineTrackerApp(App):
                 json.dump(self.db, f)
         except Exception:
             pass
-        if hasattr(self, "kpi_label"):
-            self.update_kpis()
 
-    def update_kpis(self):
-        m_list = self.db["machines"].values()
-        running = sum(1 for m in m_list if m["status"] == "RUNNING")
-        total_out = sum(int(m.get("output_2hr", 0)) for m in m_list)
-        bds = len(self.db["breakdowns"])
-        self.kpi_label.text = f"Running: {running}/18  |  2Hr Output: {total_out:,} pcs  |  CAPA Logs: {bds}"
+    def get_greeting(self):
+        hr = datetime.now().hour
+        if hr < 12:
+            return "Good Morning"
+        elif hr < 17:
+            return "Good Afternoon"
+        return "Good Evening"
 
-    def show_msg(self, title, msg):
+    def show_popup(self, title, message):
         box = BoxLayout(orientation="vertical", padding=dp(12), spacing=dp(10))
-        box.add_widget(Label(text=msg, font_size="14sp"))
-        btn = Button(text="OK", size_hint_y=None, height=dp(40), background_color=(0.1, 0.7, 0.5, 1))
-        pop = Popup(title=title, content=box, size_hint=(0.85, 0.35))
+        lbl = Label(text=message, font_size="13sp", halign="center", valign="middle")
+        lbl.bind(size=lbl.setter("text_size"))
+        box.add_widget(lbl)
+        btn = Button(text="Close", size_hint_y=None, height=dp(40), background_color=(0.1, 0.7, 0.5, 1), bold=True)
+        pop = Popup(title=title, content=box, size_hint=(0.86, 0.36))
         btn.bind(on_release=pop.dismiss)
         box.add_widget(btn)
         pop.open()
 
+    def add_labeled_input(self, parent, label_text, default_val="", height_dp=54):
+        box = BoxLayout(orientation="vertical", size_hint_y=None, height=dp(height_dp), spacing=dp(2))
+        lbl = Label(text=label_text, font_size="11sp", color=(0.65, 0.85, 1, 1), size_hint_y=None, height=dp(18), halign="left")
+        lbl.bind(size=lbl.setter("text_size"))
+        ti = TextInput(
+            text=str(default_val),
+            multiline=False,
+            font_size="13sp",
+            size_hint_y=None,
+            height=dp(height_dp - 20),
+            background_color=(0.13, 0.18, 0.26, 1),
+            foreground_color=(1, 1, 1, 1),
+            padding=[dp(8), dp(6), dp(8), dp(6)]
+        )
+        box.add_widget(lbl)
+        box.add_widget(ti)
+        parent.add_widget(box)
+        return ti
+
     def switch_tab(self, tab_name):
         self.content_box.clear_widgets()
-        tabs = {
-            "MACHINES": self.btn_tab_machines,
-            "ENTRY": self.btn_tab_entry,
-            "BREAKDOWN": self.btn_tab_bd,
-            "STREAK": self.btn_tab_streak,
+        btn_map = {
+            "HOME": self.btn_home,
+            "MACHINES": self.btn_machines,
+            "CAPA": self.btn_bd,
+            "SETTINGS": self.btn_settings
         }
-        for k, b in tabs.items():
-            b.background_color = (0.1, 0.7, 0.9, 1) if k == tab_name else (0.2, 0.25, 0.35, 1)
+        for k, b in btn_map.items():
+            b.background_color = (0.1, 0.65, 0.9, 1) if k == tab_name else (0.16, 0.22, 0.32, 1)
 
-        if tab_name == "MACHINES":
-            self.render_machines_tab()
-        elif tab_name == "ENTRY":
-            self.render_entry_tab()
-        elif tab_name == "BREAKDOWN":
-            self.render_breakdown_tab()
-        elif tab_name == "STREAK":
-            self.render_streak_tab()
+        if tab_name == "HOME":
+            self.render_home()
+        elif tab_name == "MACHINES":
+            self.render_machine_list()
+        elif tab_name == "MACHINE_DETAIL":
+            self.render_machine_detail(self.selected_machine_id)
+        elif tab_name == "CAPA":
+            self.render_capa_logs()
+        elif tab_name == "SETTINGS":
+            self.render_settings()
 
-    # ---------------- TAB 1: ALL 18 MACHINES OVERVIEW ----------------
-    def render_machines_tab(self):
-        for m in MACHINES:
-            mid = m["id"]
-            st = self.db["machines"][mid]
-            is_ok = st["status"] == "RUNNING"
-            bg = (0.08, 0.14, 0.22, 1) if is_ok else (0.24, 0.12, 0.12, 1)
+    # =========================================================================
+    # 1. HOME PAGE (GREETING + TODAY'S SUMMARY + PM DUE ALERTS)
+    # =========================================================================
+    def render_home(self):
+        cfg = self.db["settings"]
+        today_str = datetime.now().strftime("%d %b %Y (%A)")
 
-            card = CardBox(orientation="vertical", size_hint_y=None, height=dp(135), padding=dp(10), spacing=dp(4), bg_color=bg)
+        # Greeting Banner
+        greet_card = CardBox(orientation="vertical", size_hint_y=None, height=dp(96), padding=dp(12), spacing=dp(4), bg_color=(0.07, 0.22, 0.34, 1))
+        lbl_g1 = Label(text=f"{self.get_greeting()}, {cfg['user_name']}!", font_size="16sp", bold=True, color=(0.3, 0.95, 1, 1), halign="left")
+        lbl_g1.bind(size=lbl_g1.setter("text_size"))
+        lbl_g2 = Label(text=f"{cfg['designation']}  |  {cfg['shift']}", font_size="11sp", color=(0.85, 0.9, 0.95, 1), halign="left")
+        lbl_g2.bind(size=lbl_g2.setter("text_size"))
+        lbl_g3 = Label(text=f"Plant: {cfg['plant_name']}  •  Date: {today_str}", font_size="11sp", color=(0.5, 0.85, 0.7, 1), halign="left")
+        lbl_g3.bind(size=lbl_g3.setter("text_size"))
+        greet_card.add_widget(lbl_g1)
+        greet_card.add_widget(lbl_g2)
+        greet_card.add_widget(lbl_g3)
+        self.content_box.add_widget(greet_card)
 
-            row1 = BoxLayout(size_hint_y=None, height=dp(26))
-            row1.add_widget(Label(text=f"#{m['sl']} {m['name']} ({mid})", bold=True, font_size="14sp", color=(1, 1, 1, 1), halign="left", text_size=(dp(230), None)))
-            status_color = (0.2, 0.95, 0.5, 1) if is_ok else (1, 0.6, 0.2, 1)
-            row1.add_widget(Label(text=f"[{st['status']}]  Streak: {st['streak']}d", bold=True, font_size="12sp", color=status_color))
-            card.add_widget(row1)
+        # Today's Summary Counts (Running, Idle, Breakdown, Maintenance)
+        m_vals = list(self.db["machines"].values())
+        c_run = sum(1 for m in m_vals if m["status"] == "RUNNING")
+        c_idle = sum(1 for m in m_vals if m["status"] == "IDLE")
+        c_bd = sum(1 for m in m_vals if m["status"] == "BREAKDOWN")
+        c_maint = sum(1 for m in m_vals if m["status"] == "MAINTENANCE")
 
-            card.add_widget(Label(text=f"Product: {st['product']}  |  Batch: {st['batch']}", font_size="12sp", color=(0.4, 0.85, 1, 1), halign="left", size_hint_y=None, height=dp(20)))
-            card.add_widget(Label(text=f"Last 2Hr Output: {st['output_2hr']} pcs  |  Reject: {st['reject_2hr']}  |  {st['rpm']} RPM", font_size="12sp", color=(0.8, 0.9, 0.8, 1), size_hint_y=None, height=dp(20)))
-            card.add_widget(Label(text=f"Operator: {st['operator']}  |  Note: {st['issue_note']}", font_size="11sp", color=(0.75, 0.75, 0.85, 1), size_hint_y=None, height=dp(20)))
+        sec_lbl = Label(text=f"TODAY'S PLANT SUMMARY (TOTAL {len(m_vals)} MACHINES)", font_size="12sp", bold=True, color=(0.8, 0.9, 1, 1), size_hint_y=None, height=dp(22), halign="left")
+        sec_lbl.bind(size=sec_lbl.setter("text_size"))
+        self.content_box.add_widget(sec_lbl)
 
-            btn_row = BoxLayout(size_hint_y=None, height=dp(32), spacing=dp(6))
-            b_edit = Button(text="Edit 2Hr Log / Batch", font_size="11sp", background_color=(0.1, 0.6, 0.8, 1))
-            b_bd = Button(text="Log Breakdown CAPA", font_size="11sp", background_color=(0.85, 0.45, 0.1, 1))
-            b_hr = Button(text=f"+1h Run ({st['hours_logged']}h)", font_size="11sp", background_color=(0.15, 0.7, 0.4, 1))
+        grid = GridLayout(cols=2, size_hint_y=None, height=dp(140), spacing=dp(8))
+        grid.add_widget(self.make_kpi_card("RUNNING", str(c_run), "Active Production", (0.08, 0.32, 0.22, 1), (0.3, 1, 0.6, 1)))
+        grid.add_widget(self.make_kpi_card("IDLE", str(c_idle), "Standby / No Batch", (0.16, 0.20, 0.28, 1), (0.7, 0.85, 1, 1)))
+        grid.add_widget(self.make_kpi_card("BREAKDOWN", str(c_bd), "Urgent Attention", (0.38, 0.12, 0.14, 1), (1, 0.45, 0.45, 1)))
+        grid.add_widget(self.make_kpi_card("MAINTENANCE", str(c_maint), "Scheduled PM / Calib", (0.32, 0.24, 0.08, 1), (1, 0.85, 0.3, 1)))
+        self.content_box.add_widget(grid)
 
-            b_edit.bind(on_release=lambda x, m_id=mid: self.open_machine_for_entry(m_id, "ENTRY"))
-            b_bd.bind(on_release=lambda x, m_id=mid: self.open_machine_for_entry(m_id, "BREAKDOWN"))
-            b_hr.bind(on_release=lambda x, m_id=mid: self.quick_add_hour(m_id))
+        # Preventive Maintenance (PM) Due Alert Section
+        pm_machines = [m for m in m_vals if m.get("pm_status", "OK") != "OK"]
+        pm_header = CardBox(orientation="vertical", size_hint_y=None, height=dp(50), padding=dp(10), bg_color=(0.30, 0.15, 0.08, 1))
+        pm_title = Label(text=f"⚠️ PREVENTIVE MAINTENANCE DUE ALERTS ({len(pm_machines)})", font_size="13sp", bold=True, color=(1, 0.75, 0.25, 1), halign="left")
+        pm_title.bind(size=pm_title.setter("text_size"))
+        pm_sub = Label(text="Action required to prevent unscheduled breakdown", font_size="10sp", color=(0.95, 0.85, 0.7, 1), halign="left")
+        pm_sub.bind(size=pm_sub.setter("text_size"))
+        pm_header.add_widget(pm_title)
+        pm_header.add_widget(pm_sub)
+        self.content_box.add_widget(pm_header)
 
-            btn_row.add_widget(b_edit)
-            btn_row.add_widget(b_bd)
-            btn_row.add_widget(b_hr)
-            card.add_widget(btn_row)
+        if not pm_machines:
+            ok_card = CardBox(size_hint_y=None, height=dp(45), padding=dp(10), bg_color=(0.08, 0.24, 0.16, 1))
+            ok_card.add_widget(Label(text="All machines are up-to-date with Preventive Maintenance!", font_size="12sp", color=(0.4, 1, 0.6, 1)))
+            self.content_box.add_widget(ok_card)
+        else:
+            for pm_m in pm_machines:
+                mid = pm_m["id"]
+                is_overdue = pm_m["pm_status"] == "OVERDUE"
+                row = CardBox(orientation="horizontal", size_hint_y=None, height=dp(66), padding=dp(8), spacing=dp(6), bg_color=(0.24, 0.11, 0.12, 1) if is_overdue else (0.20, 0.18, 0.10, 1))
+                info = BoxLayout(orientation="vertical", size_hint_x=0.68)
+                t1 = Label(text=f"{pm_m['name']} ({mid})", font_size="13sp", bold=True, color=(1, 1, 1, 1), halign="left")
+                t1.bind(size=t1.setter("text_size"))
+                t2 = Label(text=f"Status: {pm_m['pm_status']} | Last PM: {pm_m.get('last_pm_date', 'N/A')}", font_size="11sp", color=(1, 0.6, 0.4, 1) if is_overdue else (1, 0.85, 0.4, 1), halign="left")
+                t2.bind(size=t2.setter("text_size"))
+                info.add_widget(t1)
+                info.add_widget(t2)
+
+                btn_done = Button(text="Mark PM Done", size_hint_x=0.32, font_size="11sp", bold=True, background_color=(0.15, 0.75, 0.45, 1))
+                btn_done.bind(on_release=lambda x, m_id=mid: self.complete_pm(m_id))
+                row.add_widget(info)
+                row.add_widget(btn_done)
+                self.content_box.add_widget(row)
+
+        # Quick Jump Button to Machines Section
+        btn_go = Button(text="OPEN ALL MACHINES & BATCH DATA ->", size_hint_y=None, height=dp(46), background_color=(0.1, 0.6, 0.85, 1), bold=True, font_size="13sp")
+        btn_go.bind(on_release=lambda x: self.switch_tab("MACHINES"))
+        self.content_box.add_widget(btn_go)
+
+    def make_kpi_card(self, title, count_str, subtitle, bg, text_col):
+        c = CardBox(orientation="vertical", padding=dp(8), bg_color=bg)
+        c.add_widget(Label(text=title, font_size="11sp", bold=True, color=text_col))
+        c.add_widget(Label(text=count_str, font_size="22sp", bold=True, color=(1, 1, 1, 1)))
+        c.add_widget(Label(text=subtitle, font_size="10sp", color=(0.85, 0.85, 0.85, 1)))
+        return c
+
+    def complete_pm(self, m_id):
+        self.db["machines"][m_id]["pm_status"] = "OK"
+        self.db["machines"][m_id]["last_pm_date"] = datetime.now().strftime("%Y-%m-%d")
+        self.save_data()
+        self.switch_tab("HOME")
+        self.show_popup("PM Completed", f"Preventive Maintenance marked OK for {m_id}!")
+
+    # =========================================================================
+    # 2. MACHINES DIRECTORY + ADD NEW MACHINE OPTION
+    # =========================================================================
+    def render_machine_list(self):
+        top_bar = BoxLayout(orientation="horizontal", size_hint_y=None, height=dp(44), spacing=dp(8))
+        lbl = Label(text=f"PLANT MACHINES ({len(self.db['machine_order'])})", font_size="14sp", bold=True, color=(0.3, 0.9, 1, 1), size_hint_x=0.55, halign="left")
+        lbl.bind(size=lbl.setter("text_size"))
+        btn_add = Button(text="+ Add New Machine", size_hint_x=0.45, font_size="12sp", bold=True, background_color=(0.1, 0.75, 0.45, 1))
+        btn_add.bind(on_release=self.open_add_machine_modal)
+        top_bar.add_widget(lbl)
+        top_bar.add_widget(btn_add)
+        self.content_box.add_widget(top_bar)
+
+        for mid in self.db["machine_order"]:
+            m = self.db["machines"][mid]
+            st = m["status"]
+            bg = (0.08, 0.15, 0.22, 1)
+            badge_col = (0.3, 1, 0.6, 1)
+            if st == "BREAKDOWN":
+                bg = (0.28, 0.11, 0.13, 1)
+                badge_col = (1, 0.45, 0.45, 1)
+            elif st == "MAINTENANCE":
+                bg = (0.24, 0.18, 0.08, 1)
+                badge_col = (1, 0.85, 0.3, 1)
+            elif st == "IDLE":
+                bg = (0.13, 0.16, 0.20, 1)
+                badge_col = (0.75, 0.8, 0.9, 1)
+
+            card = CardBox(orientation="vertical", size_hint_y=None, height=dp(122), padding=dp(10), spacing=dp(4), bg_color=bg)
+
+            r1 = BoxLayout(size_hint_y=None, height=dp(24))
+            t_name = Label(text=f"#{m['sl']} {m['name']} ({mid})", font_size="14sp", bold=True, color=(1, 1, 1, 1), halign="left")
+            t_name.bind(size=t_name.setter("text_size"))
+            t_stat = Label(text=f"[{st}]", font_size="12sp", bold=True, color=badge_col, size_hint_x=0.35, halign="right")
+            t_stat.bind(size=t_stat.setter("text_size"))
+            r1.add_widget(t_name)
+            r1.add_widget(t_stat)
+            card.add_widget(r1)
+
+            r2 = Label(text=f"Product: {m['product']}  |  Batch: {m['batch']}", font_size="12sp", color=(0.45, 0.9, 1, 1), size_hint_y=None, height=dp(20), halign="left")
+            r2.bind(size=r2.setter("text_size"))
+            card.add_widget(r2)
+
+            r3 = Label(text=f"Operator: {m['operator_name']}  |  Officer: {m['officer_name']}", font_size="11sp", color=(0.85, 0.85, 0.9, 1), size_hint_y=None, height=dp(18), halign="left")
+            r3.bind(size=r3.setter("text_size"))
+            card.add_widget(r3)
+
+            btn_open = Button(
+                text="Open Machine Dashboard & Batch Entry ->",
+                size_hint_y=None,
+                height=dp(34),
+                font_size="12sp",
+                bold=True,
+                background_color=(0.12, 0.55, 0.82, 1)
+            )
+            btn_open.bind(on_release=lambda x, m_id=mid: self.open_machine_detail(m_id))
+            card.add_widget(btn_open)
 
             self.content_box.add_widget(card)
 
-    def open_machine_for_entry(self, m_id, tab):
+    def open_add_machine_modal(self, *args):
+        box = BoxLayout(orientation="vertical", padding=dp(10), spacing=dp(8))
+        in_name = self.add_labeled_input(box, "Machine Name (যেমন: Blister Line 03):", "")
+        in_id = self.add_labeled_input(box, "Machine ID (যেমন: K02PR-150):", f"K02PR-{150 + len(self.db['machine_order'])}")
+        in_prod = self.add_labeled_input(box, "Running Product Name:", "Standard Batch")
+        in_batch = self.add_labeled_input(box, "Current Batch No:", "B26-1099")
+
+        btn_row = BoxLayout(size_hint_y=None, height=dp(42), spacing=dp(8))
+        btn_cancel = Button(text="Cancel", background_color=(0.5, 0.2, 0.2, 1))
+        btn_save = Button(text="Add Machine", bold=True, background_color=(0.1, 0.75, 0.45, 1))
+        btn_row.add_widget(btn_cancel)
+        btn_row.add_widget(btn_save)
+        box.add_widget(btn_row)
+
+        pop = Popup(title="Add New Machine to Plant", content=box, size_hint=(0.92, 0.68))
+        btn_cancel.bind(on_release=pop.dismiss)
+
+        def save_new(*a):
+            name = in_name.text.strip()
+            mid = in_id.text.strip().upper()
+            if not name or not mid:
+                return
+            if mid in self.db["machines"]:
+                self.show_popup("Duplicate ID", "This Machine ID already exists!")
+                return
+            new_sl = len(self.db["machine_order"]) + 1
+            self.db["machine_order"].append(mid)
+            self.db["machines"][mid] = {
+                "sl": new_sl,
+                "name": name,
+                "id": mid,
+                "status": "RUNNING",
+                "product": in_prod.text.strip() or "N/A",
+                "batch": in_batch.text.strip() or "N/A",
+                "had_issue": "NO",
+                "issue_details": "Newly added machine - smooth run",
+                "new_parts_count": "0",
+                "parts_names": "None",
+                "std_batch_time": "6.0 Hours",
+                "actual_batch_time": "6.0 Hours",
+                "delay_reason": "No delay",
+                "operator_name": "Assigned Operator",
+                "officer_name": "Assigned Officer",
+                "pm_status": "OK",
+                "last_pm_date": datetime.now().strftime("%Y-%m-%d"),
+                "batch_history": []
+            }
+            self.save_data()
+            pop.dismiss()
+            self.switch_tab("MACHINES")
+            self.show_popup("Success", f"Machine {name} ({mid}) added!")
+
+        btn_save.bind(on_release=save_new)
+        pop.open()
+
+    def open_machine_detail(self, m_id):
         self.selected_machine_id = m_id
-        self.switch_tab(tab)
+        self.switch_tab("MACHINE_DETAIL")
 
-    def quick_add_hour(self, m_id):
-        st = self.db["machines"][m_id]
-        st["hours_logged"] = min(24, st.get("hours_logged", 16) + 1)
-        st["output_2hr"] = int(st.get("output_2hr", 18000)) + 4500
-        self.save_data()
-        self.switch_tab("MACHINES")
+    # =========================================================================
+    # 3. INDIVIDUAL MACHINE PROFILE (PRIORITY-ORDERED SECTIONS)
+    # =========================================================================
+    def render_machine_detail(self, m_id):
+        m = self.db["machines"][m_id]
 
-    # ---------------- TAB 2: 2-HOUR SMART ENGINEERING ENTRY ----------------
-    def render_entry_tab(self):
-        form = CardBox(orientation="vertical", size_hint_y=None, height=dp(580), padding=dp(12), spacing=dp(8))
-        form.add_widget(Label(text="SECTION A & B: 2-HOUR PRODUCTION & TELEMETRY ENTRY", bold=True, font_size="14sp", color=(0.3, 0.9, 1, 1), size_hint_y=None, height=dp(24)))
-
-        m_options = [f"{m['id']} - {m['name']}" for m in MACHINES]
-        curr_m = self.db["machines"][self.selected_machine_id]
-        default_opt = f"{self.selected_machine_id} - {curr_m['name']}"
-
-        self.sp_machine = Spinner(text=default_opt, values=m_options, size_hint_y=None, height=dp(40), background_color=(0.15, 0.4, 0.6, 1))
-        self.sp_machine.bind(text=self.on_spinner_machine_change)
-        form.add_widget(self.sp_machine)
-
-        self.sp_status = Spinner(text=curr_m["status"], values=["RUNNING", "BREAKDOWN", "MAINTENANCE", "IDLE"], size_hint_y=None, height=dp(38))
-        form.add_widget(self.sp_status)
-
-        self.in_prod = self.add_field(form, "Running Product Name:", curr_m["product"])
-        self.in_batch = self.add_field(form, "Batch Number:", curr_m["batch"])
-        self.in_out2hr = self.add_field(form, "Last 2 Hours Good Output (pcs):", str(curr_m["output_2hr"]))
-        self.in_rej2hr = self.add_field(form, "Last 2 Hours Rejects (pcs):", str(curr_m["reject_2hr"]))
-        self.in_rpm = self.add_field(form, "Machine Speed (RPM) / Temp (°C):", f"{curr_m['rpm']} RPM / {curr_m['temp']} C")
-        self.in_op = self.add_field(form, "Machine Operator Name:", curr_m["operator"])
-        self.in_eng = self.add_field(form, "Shift Engineer Name:", curr_m["engineer"])
-        self.in_note = self.add_field(form, "Any Problem / Observation Note:", curr_m["issue_note"])
-
-        btn_save = Button(text="SAVE 2-HOUR ENGINEERING UPDATE", size_hint_y=None, height=dp(46), background_color=(0.1, 0.8, 0.45, 1), bold=True)
-        btn_save.bind(on_release=self.save_2hr_entry)
-        form.add_widget(btn_save)
-
-        self.content_box.add_widget(form)
-
-    def add_field(self, parent, label_text, val):
-        row = BoxLayout(orientation="vertical", size_hint_y=None, height=dp(48))
-        row.add_widget(Label(text=label_text, font_size="11sp", color=(0.75, 0.85, 0.95, 1), size_hint_y=None, height=dp(16)))
-        ti = TextInput(text=val, multiline=False, font_size="13sp", size_hint_y=None, height=dp(32), background_color=(0.14, 0.18, 0.26, 1), foreground_color=(1, 1, 1, 1))
-        row.add_widget(ti)
-        parent.add_widget(row)
-        return ti
-
-    def on_spinner_machine_change(self, spinner, text):
-        m_id = text.split(" - ")[0]
-        self.selected_machine_id = m_id
-        self.switch_tab("ENTRY")
-
-    def save_2hr_entry(self, *args):
-        m_id = self.sp_machine.text.split(" - ")[0]
-        st = self.db["machines"][m_id]
-        st["status"] = self.sp_status.text
-        st["product"] = self.in_prod.text
-        st["batch"] = self.in_batch.text
-        try:
-            st["output_2hr"] = int(self.in_out2hr.text)
-        except Exception:
-            st["output_2hr"] = 0
-        try:
-            st["reject_2hr"] = int(self.in_rej2hr.text)
-        except Exception:
-            st["reject_2hr"] = 0
-        st["operator"] = self.in_op.text
-        st["engineer"] = self.in_eng.text
-        st["issue_note"] = self.in_note.text
-        self.save_data()
-        self.show_msg("Saved!", f"{st['name']} ({m_id}) 2-Hour Update Saved!")
-
-    # ---------------- TAB 3: BREAKDOWN, RCA & CAPA REGISTER ----------------
-    def render_breakdown_tab(self):
-        form = CardBox(orientation="vertical", size_hint_y=None, height=dp(690), padding=dp(12), spacing=dp(7), bg_color=(0.16, 0.11, 0.12, 1))
-        form.add_widget(Label(text="SECTION C: BREAKDOWN, RCA & CAPA ENTRY", bold=True, font_size="14sp", color=(1, 0.7, 0.2, 1), size_hint_y=None, height=dp(24)))
-
-        m_options = [f"{m['id']} - {m['name']}" for m in MACHINES]
-        curr_m = self.db["machines"][self.selected_machine_id]
-        self.bd_machine = Spinner(text=f"{self.selected_machine_id} - {curr_m['name']}", values=m_options, size_hint_y=None, height=dp(38), background_color=(0.6, 0.3, 0.1, 1))
-        form.add_widget(self.bd_machine)
-
-        today_str = datetime.now().strftime("%Y-%m-%d")
-        now_str = datetime.now().strftime("%H:%M")
-
-        self.bd_date = self.add_field(form, "1. Date (তারিখ):", today_str)
-        self.bd_start = self.add_field(form, "2. Breakdown Start Time (শুরুর সময়):", now_str)
-        self.bd_end = self.add_field(form, "3. Completed Time (শেষ হওয়ার সময়):", "11:30")
-        self.bd_batch = self.add_field(form, "4. Batch Number (ব্যাচ নং):", curr_m["batch"])
-        self.bd_issue = self.add_field(form, "5. Issue Details (কি সমস্যা হয়েছে):", "")
-        self.bd_rca = self.add_field(form, "6. Root Cause - RCA (সমস্যার মূল কারণ):", "")
-        self.bd_action = self.add_field(form, "7. Corrective Action (কি সমাধান করা হয়েছে):", "")
-        self.bd_advice = self.add_field(form, "8. Advice for Production (প্রোডাকশনের জন্য পরামর্শ):", "")
-        self.bd_param = self.add_field(form, "9. Any Change Parameter (প্যারামিটার পরিবর্তন):", "None")
-        self.bd_parts = self.add_field(form, "10. Parts or Others Used (স্পেয়ার পার্টস):", "None")
-        self.bd_person = self.add_field(form, "11. Responsible Person (দায়িত্বপ্রাপ্ত ইঞ্জিনিয়ার):", curr_m["engineer"])
-
-        btn_bd_save = Button(text="SUBMIT BREAKDOWN & CAPA RECORD", size_hint_y=None, height=dp(44), background_color=(0.95, 0.5, 0.1, 1), bold=True)
-        btn_bd_save.bind(on_release=self.save_breakdown_entry)
-        form.add_widget(btn_bd_save)
-        self.content_box.add_widget(form)
-
-        # Breakdown History List
-        self.content_box.add_widget(Label(text="RECENT BREAKDOWN & CAPA LOGS", bold=True, font_size="13sp", color=(1, 0.8, 0.3, 1), size_hint_y=None, height=dp(28)))
-        for b in self.db["breakdowns"]:
-            bcard = CardBox(orientation="vertical", size_hint_y=None, height=dp(135), padding=dp(8), spacing=dp(2))
-            bcard.add_widget(Label(text=f"{b['machine_name']} ({b['machine_id']}) | Date: {b['date']} ({b['start_time']} - {b['end_time']})", bold=True, font_size="12sp", color=(1, 0.75, 0.3, 1)))
-            bcard.add_widget(Label(text=f"Batch: {b['batch']} | Issue: {b['issue']}", font_size="11sp", color=(1, 1, 1, 1)))
-            bcard.add_widget(Label(text=f"RCA: {b['root_cause']} | Action: {b['action']}", font_size="11sp", color=(0.5, 0.95, 0.7, 1)))
-            bcard.add_widget(Label(text=f"Advice: {b['advice']}", font_size="11sp", color=(0.5, 0.85, 1, 1)))
-            bcard.add_widget(Label(text=f"Param Change: {b['param_change']} | Parts: {b['parts']} | By: {b['person']}", font_size="10sp", color=(0.8, 0.8, 0.8, 1)))
-            self.content_box.add_widget(bcard)
-
-    def save_breakdown_entry(self, *args):
-        m_id = self.bd_machine.text.split(" - ")[0]
-        m_name = self.bd_machine.text.split(" - ")[1]
-        entry = {
-            "machine_id": m_id,
-            "machine_name": m_name,
-            "date": self.bd_date.text,
-            "start_time": self.bd_start.text,
-            "end_time": self.bd_end.text,
-            "batch": self.bd_batch.text,
-            "issue": self.bd_issue.text or "Unspecified fault",
-            "root_cause": self.bd_rca.text or "Under investigation",
-            "action": self.bd_action.text or "Rectified & tested",
-            "advice": self.bd_advice.text or "Monitor closely",
-            "param_change": self.bd_param.text,
-            "parts": self.bd_parts.text,
-            "person": self.bd_person.text,
-        }
-        self.db["breakdowns"].insert(0, entry)
-        self.db["machines"][m_id]["issue_note"] = entry["issue"]
-        self.save_data()
-        self.switch_tab("BREAKDOWN")
-        self.show_msg("CAPA Saved", f"Breakdown log added for {m_name}!")
-
-    # ---------------- TAB 4: WEEKLY & MONTHLY STREAK MATRIX ----------------
-    def render_streak_tab(self):
-        top = CardBox(orientation="vertical", size_hint_y=None, height=dp(55), padding=dp(8))
-        top.add_widget(Label(text="OCTOBER 2026 MACHINE STREAK & DAILY HOURS LEADERBOARD", bold=True, font_size="13sp", color=(1, 0.65, 0.2, 1)))
-        top.add_widget(Label(text="Tap '+1 Day Streak' to increment active run streak", font_size="11sp", color=(0.75, 0.8, 0.9, 1)))
+        # Back button & Machine Title
+        top = BoxLayout(size_hint_y=None, height=dp(40), spacing=dp(8))
+        btn_back = Button(text="<- Back", size_hint_x=0.26, font_size="12sp", bold=True, background_color=(0.25, 0.32, 0.44, 1))
+        btn_back.bind(on_release=lambda x: self.switch_tab("MACHINES"))
+        lbl_t = Label(text=f"#{m['sl']} {m['name']} ({m_id})", font_size="15sp", bold=True, color=(0.3, 0.95, 1, 1), size_hint_x=0.74, halign="left")
+        lbl_t.bind(size=lbl_t.setter("text_size"))
+        top.add_widget(btn_back)
+        top.add_widget(lbl_t)
         self.content_box.add_widget(top)
 
-        for m in MACHINES:
-            mid = m["id"]
-            st = self.db["machines"][mid]
-            row = CardBox(orientation="horizontal", size_hint_y=None, height=dp(54), padding=dp(8), spacing=dp(8))
-            row.add_widget(Label(text=f"#{m['sl']} {m['name']}\n({mid})", font_size="12sp", bold=True, size_hint_x=0.42))
-            row.add_widget(Label(text=f"Today: {st['hours_logged']}/24h\nStreak: {st['streak']} Days", font_size="12sp", color=(0.3, 0.95, 0.6, 1), size_hint_x=0.33))
-            btn = Button(text="+1d Streak", size_hint_x=0.25, font_size="11sp", background_color=(0.9, 0.45, 0.1, 1))
-            btn.bind(on_release=lambda x, m_id=mid: self.bump_streak(m_id))
-            row.add_widget(btn)
-            self.content_box.add_widget(row)
+        # ---------------- PRIORITY 1: LIVE STATUS, PRODUCT & BATCH ----------------
+        sec1 = CardBox(orientation="vertical", size_hint_y=None, height=dp(215), padding=dp(12), spacing=dp(6), bg_color=(0.08, 0.16, 0.24, 1))
+        sec1.add_widget(self.make_sec_header("PRIORITY 1: RUNNING STATUS, PRODUCT & BATCH", (0.3, 0.95, 1, 1)))
 
-    def bump_streak(self, m_id):
-        self.db["machines"][m_id]["streak"] += 1
+        lbl_st = Label(text="Machine Current Status (Running / Idle / Breakdown / Maintenance):", font_size="11sp", color=(0.8, 0.9, 1, 1), size_hint_y=None, height=dp(18), halign="left")
+        lbl_st.bind(size=lbl_st.setter("text_size"))
+        sec1.add_widget(lbl_st)
+
+        self.det_status = Spinner(
+            text=m["status"],
+            values=["RUNNING", "IDLE", "BREAKDOWN", "MAINTENANCE"],
+            size_hint_y=None,
+            height=dp(38),
+            bold=True,
+            background_color=(0.12, 0.55, 0.75, 1)
+        )
+        sec1.add_widget(self.det_status)
+
+        self.det_prod = self.add_labeled_input(sec1, "Running Product Name (কোন প্রোডাক্ট চলছে):", m["product"])
+        self.det_batch = self.add_labeled_input(sec1, "Batch Number (ব্যাচ নাম্বার):", m["batch"])
+        self.content_box.add_widget(sec1)
+
+        # ---------------- PRIORITY 2: BATCH DURATION & DELAY REASON ----------------
+        sec2 = CardBox(orientation="vertical", size_hint_y=None, height=dp(210), padding=dp(12), spacing=dp(6), bg_color=(0.12, 0.15, 0.22, 1))
+        sec2.add_widget(self.make_sec_header("PRIORITY 2: BATCH COMPLETION TIME & DELAY LOG", (0.4, 1, 0.65, 1)))
+
+        self.det_std_time = self.add_labeled_input(sec2, "Standard Batch Time (নির্ধারিত সময়):", m.get("std_batch_time", "6.0 Hours"))
+        self.det_act_time = self.add_labeled_input(sec2, "Actual Time Taken to Finish Batch (ব্যাচ শেষ হতে কত সময় লাগছে):", m.get("actual_batch_time", "6.0 Hours"))
+        self.det_delay = self.add_labeled_input(sec2, "Why Extra Time Needed? (সময় বেশি লাগলে কেন বেশি লাগলো তার কারণ):", m.get("delay_reason", "No delay"))
+        self.content_box.add_widget(sec2)
+
+        # ---------------- PRIORITY 3: BATCH ISSUES & NEW SPARE PARTS ----------------
+        sec3 = CardBox(orientation="vertical", size_hint_y=None, height=dp(270), padding=dp(12), spacing=dp(6), bg_color=(0.18, 0.12, 0.14, 1))
+        sec3.add_widget(self.make_sec_header("PRIORITY 3: BATCH TROUBLE / ISSUES & SPARE PARTS", (1, 0.75, 0.3, 1)))
+
+        lbl_iss = Label(text="Did Any Problem Occur in this Batch? (এই ব্যাচে কোনো সমস্যা হয়েছে কিনা):", font_size="11sp", color=(1, 0.85, 0.7, 1), size_hint_y=None, height=dp(18), halign="left")
+        lbl_iss.bind(size=lbl_iss.setter("text_size"))
+        sec3.add_widget(lbl_iss)
+
+        self.det_had_issue = Spinner(
+            text=m.get("had_issue", "NO"),
+            values=["NO - Smooth Batch Run", "YES - Problem Occurred"],
+            size_hint_y=None,
+            height=dp(36),
+            background_color=(0.65, 0.35, 0.15, 1)
+        )
+        sec3.add_widget(self.det_had_issue)
+
+        self.det_issue_desc = self.add_labeled_input(sec3, "What Problems Occurred? (কী কী সমস্যা হয়েছে বিস্তারিত):", m.get("issue_details", "None"))
+        self.det_parts_cnt = self.add_labeled_input(sec3, "How Many New Parts Installed? (কয়টা নতুন পার্টস দেওয়া হয়েছে):", m.get("new_parts_count", "0"))
+        self.det_parts_list = self.add_labeled_input(sec3, "New Parts Name & Specification (পার্টসগুলোর নাম):", m.get("parts_names", "None"))
+        self.content_box.add_widget(sec3)
+
+        # ---------------- PRIORITY 4: OPERATOR, OFFICER & PM STATUS ----------------
+        sec4 = CardBox(orientation="vertical", size_hint_y=None, height=dp(215), padding=dp(12), spacing=dp(6), bg_color=(0.10, 0.14, 0.20, 1))
+        sec4.add_widget(self.make_sec_header("PRIORITY 4: OPERATOR, OFFICER & PM ALERT", (0.75, 0.65, 1, 1)))
+
+        self.det_op = self.add_labeled_input(sec4, "Batch Machine Operator Name (মেশিন অপারেটর কে ছিল):", m.get("operator_name", ""))
+        self.det_off = self.add_labeled_input(sec4, "Production / Engr. Officer Name (অফিসার কে ছিল):", m.get("officer_name", ""))
+
+        lbl_pm = Label(text="Preventive Maintenance (PM) Alert Status:", font_size="11sp", color=(0.8, 0.85, 1, 1), size_hint_y=None, height=dp(18), halign="left")
+        lbl_pm.bind(size=lbl_pm.setter("text_size"))
+        sec4.add_widget(lbl_pm)
+
+        self.det_pm = Spinner(
+            text=m.get("pm_status", "OK"),
+            values=["OK", "Due Tomorrow", "Due in 2 Days", "Due in 3 Days", "OVERDUE"],
+            size_hint_y=None,
+            height=dp(36),
+            background_color=(0.25, 0.35, 0.55, 1)
+        )
+        sec4.add_widget(self.det_pm)
+        self.content_box.add_widget(sec4)
+
+        # SAVE BUTTON
+        btn_save = Button(
+            text=f"SAVE ALL BATCH & MACHINE DATA ({m_id})",
+            size_hint_y=None,
+            height=dp(50),
+            font_size="13sp",
+            bold=True,
+            background_color=(0.1, 0.8, 0.45, 1)
+        )
+        btn_save.bind(on_release=lambda x: self.save_machine_profile(m_id))
+        self.content_box.add_widget(btn_save)
+
+        # PREVIOUS BATCH LOG HISTORY FOR THIS MACHINE
+        hist_list = m.get("batch_history", [])
+        h_lbl = Label(text=f"SAVED BATCH LOG HISTORY FOR {m['name']} ({len(hist_list)})", font_size="12sp", bold=True, color=(0.4, 0.9, 1, 1), size_hint_y=None, height=dp(26), halign="left")
+        h_lbl.bind(size=h_lbl.setter("text_size"))
+        self.content_box.add_widget(h_lbl)
+
+        for item in hist_list:
+            hcard = CardBox(orientation="vertical", size_hint_y=None, height=dp(115), padding=dp(8), spacing=dp(2), bg_color=(0.07, 0.11, 0.16, 1))
+            l1 = Label(text=f"Batch: {item['batch']} ({item['product']}) | Saved: {item['time']}", font_size="12sp", bold=True, color=(0.3, 0.95, 0.7, 1), halign="left")
+            l1.bind(size=l1.setter("text_size"))
+            l2 = Label(text=f"Duration: {item['actual_time']} (Std: {item['std_time']}) | Delay: {item['delay']}", font_size="11sp", color=(0.9, 0.9, 0.95, 1), halign="left")
+            l2.bind(size=l2.setter("text_size"))
+            l3 = Label(text=f"Issues: {item['issue']} | New Parts ({item['parts_cnt']}): {item['parts']}", font_size="11sp", color=(1, 0.8, 0.4, 1), halign="left")
+            l3.bind(size=l3.setter("text_size"))
+            l4 = Label(text=f"Operator: {item['operator']} | Officer: {item['officer']}", font_size="11sp", color=(0.75, 0.8, 1, 1), halign="left")
+            l4.bind(size=l4.setter("text_size"))
+            hcard.add_widget(l1)
+            hcard.add_widget(l2)
+            hcard.add_widget(l3)
+            hcard.add_widget(l4)
+            self.content_box.add_widget(hcard)
+
+    def make_sec_header(self, title, col):
+        lbl = Label(text=title, font_size="12sp", bold=True, color=col, size_hint_y=None, height=dp(20), halign="left")
+        lbl.bind(size=lbl.setter("text_size"))
+        return lbl
+
+    def save_machine_profile(self, m_id):
+        m = self.db["machines"][m_id]
+        m["status"] = self.det_status.text
+        m["product"] = self.det_prod.text.strip()
+        m["batch"] = self.det_batch.text.strip()
+        m["std_batch_time"] = self.det_std_time.text.strip()
+        m["actual_batch_time"] = self.det_act_time.text.strip()
+        m["delay_reason"] = self.det_delay.text.strip()
+        m["had_issue"] = "YES" if "YES" in self.det_had_issue.text else "NO"
+        m["issue_details"] = self.det_issue_desc.text.strip()
+        m["new_parts_count"] = self.det_parts_cnt.text.strip()
+        m["parts_names"] = self.det_parts_list.text.strip()
+        m["operator_name"] = self.det_op.text.strip()
+        m["officer_name"] = self.det_off.text.strip()
+        m["pm_status"] = self.det_pm.text
+
+        log_entry = {
+            "time": datetime.now().strftime("%d %b %H:%M"),
+            "product": m["product"],
+            "batch": m["batch"],
+            "std_time": m["std_batch_time"],
+            "actual_time": m["actual_batch_time"],
+            "delay": m["delay_reason"],
+            "issue": m["issue_details"],
+            "parts_cnt": m["new_parts_count"],
+            "parts": m["parts_names"],
+            "operator": m["operator_name"],
+            "officer": m["officer_name"]
+        }
+        m.setdefault("batch_history", []).insert(0, log_entry)
+
+        if m["had_issue"] == "YES" or m["status"] == "BREAKDOWN":
+            self.db["capa_logs"].insert(0, {
+                "machine": f"{m['name']} ({m_id})",
+                "batch": m["batch"],
+                "time": log_entry["time"],
+                "issue": m["issue_details"],
+                "delay": m["delay_reason"],
+                "parts": f"{m['new_parts_count']} pcs ({m['parts_names']})",
+                "staff": f"Op: {m['operator_name']} | Off: {m['officer_name']}"
+            })
+
         self.save_data()
-        self.switch_tab("STREAK")
+        self.switch_tab("MACHINE_DETAIL")
+        self.show_popup("Saved Successfully", f"All batch & engineering records updated for {m['name']}!")
+
+    # =========================================================================
+    # 4. CENTRAL BREAKDOWN & BATCH DELAY REGISTER (CAPA LOG)
+    # =========================================================================
+    def render_capa_logs(self):
+        hdr = CardBox(orientation="vertical", size_hint_y=None, height=dp(56), padding=dp(10), bg_color=(0.26, 0.12, 0.14, 1))
+        hdr.add_widget(Label(text="PLANT-WIDE BATCH ISSUES, DELAYS & SPARE PARTS LOG", font_size="13sp", bold=True, color=(1, 0.75, 0.3, 1)))
+        hdr.add_widget(Label(text="Automatically synced when an issue or breakdown is logged on any machine", font_size="10sp", color=(0.9, 0.8, 0.8, 1)))
+        self.content_box.add_widget(hdr)
+
+        if not self.db["capa_logs"]:
+            empty = CardBox(size_hint_y=None, height=dp(60), padding=dp(12))
+            empty.add_widget(Label(text="No batch breakdowns logged yet. Open any machine to log issues.", font_size="12sp"))
+            self.content_box.add_widget(empty)
+            return
+
+        for log in self.db["capa_logs"]:
+            c = CardBox(orientation="vertical", size_hint_y=None, height=dp(115), padding=dp(10), spacing=dp(3), bg_color=(0.14, 0.11, 0.15, 1))
+            l1 = Label(text=f"{log['machine']}  |  Batch: {log['batch']}  ({log['time']})", font_size="12sp", bold=True, color=(1, 0.7, 0.3, 1), halign="left")
+            l1.bind(size=l1.setter("text_size"))
+            l2 = Label(text=f"Issue: {log['issue']}", font_size="11sp", color=(1, 1, 1, 1), halign="left")
+            l2.bind(size=l2.setter("text_size"))
+            l3 = Label(text=f"Delay Reason: {log['delay']}  |  Parts: {log['parts']}", font_size="11sp", color=(0.4, 0.95, 0.7, 1), halign="left")
+            l3.bind(size=l3.setter("text_size"))
+            l4 = Label(text=log["staff"], font_size="10sp", color=(0.75, 0.85, 1, 1), halign="left")
+            l4.bind(size=l4.setter("text_size"))
+            c.add_widget(l1)
+            c.add_widget(l2)
+            c.add_widget(l3)
+            c.add_widget(l4)
+            self.content_box.add_widget(c)
+
+    # =========================================================================
+    # 5. SETTINGS MENU
+    # =========================================================================
+    def render_settings(self):
+        cfg = self.db["settings"]
+        card = CardBox(orientation="vertical", size_hint_y=None, height=dp(360), padding=dp(12), spacing=dp(8), bg_color=(0.09, 0.14, 0.22, 1))
+        card.add_widget(self.make_sec_header("ENGINEER PROFILE & PLANT SETTINGS", (0.3, 0.95, 1, 1)))
+
+        self.set_name = self.add_labeled_input(card, "Engineer Name (Home Screen Greeting):", cfg["user_name"])
+        self.set_desig = self.add_labeled_input(card, "Designation / Role:", cfg["designation"])
+        self.set_shift = self.add_labeled_input(card, "Current Active Shift:", cfg["shift"])
+        self.set_plant = self.add_labeled_input(card, "Plant / Department Name:", cfg["plant_name"])
+
+        btn_save = Button(text="SAVE SETTINGS", size_hint_y=None, height=dp(44), bold=True, background_color=(0.1, 0.75, 0.45, 1))
+        btn_save.bind(on_release=self.save_settings)
+        card.add_widget(btn_save)
+        self.content_box.add_widget(card)
+
+        # Reset / Demo Data Option
+        danger = CardBox(orientation="vertical", size_hint_y=None, height=dp(100), padding=dp(12), spacing=dp(6), bg_color=(0.22, 0.10, 0.12, 1))
+        danger.add_widget(self.make_sec_header("DATA MANAGEMENT", (1, 0.5, 0.5, 1)))
+        btn_reset = Button(text="Reset All Data to Factory Default", size_hint_y=None, height=dp(40), background_color=(0.8, 0.2, 0.2, 1), bold=True)
+        btn_reset.bind(on_release=self.reset_all_data)
+        danger.add_widget(btn_reset)
+        self.content_box.add_widget(danger)
+
+    def save_settings(self, *args):
+        self.db["settings"]["user_name"] = self.set_name.text.strip() or "Engineer"
+        self.db["settings"]["designation"] = self.set_desig.text.strip()
+        self.db["settings"]["shift"] = self.set_shift.text.strip()
+        self.db["settings"]["plant_name"] = self.set_plant.text.strip()
+        self.save_data()
+        self.show_popup("Settings Saved", "Greeting & profile settings updated!")
+
+    def reset_all_data(self, *args):
+        if os.path.exists(self.data_file):
+            os.remove(self.data_file)
+        self.load_data()
+        self.switch_tab("HOME")
+        self.show_popup("Reset Complete", "All machine data restored to default!")
 
 
 if __name__ == "__main__":
