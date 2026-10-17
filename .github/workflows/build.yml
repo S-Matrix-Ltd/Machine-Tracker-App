@@ -22,14 +22,6 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Cache Buildozer Directories
-        uses: actions/cache@v4
-        with:
-          path: |
-            .buildozer
-            ~/.buildozer
-          key: buildozer-${{ runner.os }}-${{ hashFiles('buildozer.spec') }}
-
       - name: Install System Dependencies
         run: |
           sudo apt-get update
@@ -37,14 +29,14 @@ jobs:
             build-essential git zip unzip autoconf libtool \
             pkg-config zlib1g-dev libncurses5-dev libncursesw5-dev \
             libtinfo5 cmake libffi-dev libssl-dev automake \
-            libltdl-dev lld patch
+            libltdl-dev lld patch libsqlite3-dev
 
-      - name: Install Buildozer & Cython
+      - name: Install Pinned Buildozer & Cython
         run: |
-          pip install --upgrade pip setuptools wheel
-          pip install "cython==0.29.36" buildozer
+          pip install "pip<24.0" "setuptools<69.0.0" "wheel<0.43.0"
+          pip install "cython==0.29.36" "buildozer==1.5.0"
 
-      - name: Build APK with Buildozer
+      - name: Accept Android Licenses & Build APK
         run: |
           yes | buildozer android debug
 
