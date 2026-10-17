@@ -25,13 +25,26 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
+      - name: Auto Increment Version & Set Permanent Keystore
+        run: |
+          # প্রতিবার বিল্ডের সাথে অটোমেটিক ভার্সন এবং numeric_version বাড়ানো
+          NEW_VER="1.0.${{ github.run_number }}"
+          NUM_VER="$((100 + ${{ github.run_number }}))"
+          sed -i "s/^version = .*/version = $NEW_VER/" buildozer.spec
+          echo "" >> buildozer.spec
+          echo "android.numeric_version = $NUM_VER" >> buildozer.spec
+
+          # স্থায়ী debug.keystore সেট করা যাতে কখনোই সিগনেচার পরিবর্তন না হয়
+          mkdir -p ~/.android
+          cp my_fixed_debug.keystore ~/.android/debug.keystore
+
       - name: Cache Buildozer Directories
         uses: actions/cache@v4
         with:
           path: |
             .buildozer
             ~/.buildozer
-          key: buildozer-${{ runner.os }}-${{ hashFiles('buildozer.spec') }}
+          key: buildozer-v2-${{ runner.os }}
 
       - name: Install System Dependencies
         run: |
@@ -50,6 +63,8 @@ jobs:
       - name: Accept Android Licenses & Build APK
         run: |
           yes | buildozer android debug
+          # বিল্ডের মধ্যেও যদি নতুন কীস্টোর তৈরি করতে চায় তা রোধ করা
+          cp my_fixed_debug.keystore ~/.android/debug.keystore
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
@@ -62,7 +77,7 @@ jobs:
         with:
           tag_name: v1.0.${{ github.run_number }}
           name: "Smart Eng Logbook v1.0.${{ github.run_number }}"
-          body: "Automated Android APK Release built from commit ${{ github.sha }}"
+          body: "Automated Update APK (No uninstall required after installing this version)"
           files: bin/*.apk
           draft: false
           prerelease: false
