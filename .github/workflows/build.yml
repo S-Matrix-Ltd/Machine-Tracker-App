@@ -1,8 +1,11 @@
-name: Build Android APK
+name: Build & Auto-Release Android APK
 
 on:
   push:
     branches: [ main ]
+
+permissions:
+  contents: write
 
 jobs:
   build:
@@ -21,6 +24,14 @@ jobs:
         with:
           distribution: 'temurin'
           java-version: '17'
+
+      - name: Cache Buildozer Directories
+        uses: actions/cache@v4
+        with:
+          path: |
+            .buildozer
+            ~/.buildozer
+          key: buildozer-${{ runner.os }}-${{ hashFiles('buildozer.spec') }}
 
       - name: Install System Dependencies
         run: |
@@ -45,3 +56,13 @@ jobs:
         with:
           name: Machine-Tracker-APK
           path: bin/*.apk
+
+      - name: Auto Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v1.0.${{ github.run_number }}
+          name: "Smart Eng Logbook v1.0.${{ github.run_number }}"
+          body: "Automated Android APK Release built from commit ${{ github.sha }}"
+          files: bin/*.apk
+          draft: false
+          prerelease: false
