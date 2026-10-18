@@ -1,11 +1,8 @@
 import json
 import os
 import time
-import urllib.request
 from datetime import datetime
 from kivy.app import App
-from kivy.core.text import LabelBase
-from kivy.core.window import Window
 from kivy.clock import Clock
 from kivy.animation import Animation
 from kivy.uix.boxlayout import BoxLayout
@@ -21,40 +18,10 @@ from kivy.uix.behaviors import ButtonBehavior
 from kivy.graphics import Color, RoundedRectangle, Rectangle, Line, Ellipse
 from kivy.metrics import dp, sp
 from kivy.utils import get_color_from_hex
+from kivy.core.window import Window
 
 # ==========================================
-# 1. FAIL-SAFE FONT LOADING SYSTEM
-# ==========================================
-FONT_PATH = os.path.join(os.path.dirname(__file__), "MaterialIcons-Regular.ttf")
-FONT_URL = "https://unpkg.com/material-design-icons@3.0.1/iconfont/MaterialIcons-Regular.ttf"
-
-# Check if font exists and is valid (>50KB)
-if not os.path.exists(FONT_PATH) or os.path.getsize(FONT_PATH) < 50000:
-    try:
-        urllib.request.urlretrieve(FONT_URL, FONT_PATH)
-    except Exception:
-        pass
-
-if os.path.exists(FONT_PATH) and os.path.getsize(FONT_PATH) > 50000:
-    LabelBase.register(name="Icons", fn_regular=FONT_PATH)
-    ICON_FONT = "Icons"
-    ICONS = {
-        "home": "\ue88a", "machines": "\ue30a", "breakdown": "\ue889", "settings": "\ue8b8",
-        "running": "\ue037", "idle": "\ue034", "breakdown_icon": "\ue002", "maintenance": "\ue869",
-        "check": "\ue5ca", "check_circle": "\ue86c", "calendar": "\ue878", "add": "\ue145",
-        "build": "\ue869", "report": "\ue8b2", "inventory": "\ue179", "handover": "\ue873", "back": "\ue5c4",
-    }
-else:
-    ICON_FONT = "Roboto"
-    ICONS = {
-        "home": "H", "machines": "M", "breakdown": "B", "settings": "S",
-        "running": "R", "idle": "I", "breakdown_icon": "!", "maintenance": "M",
-        "check": "v", "check_circle": "O", "calendar": "C", "add": "+",
-        "build": "W", "report": "R", "inventory": "S", "handover": "N", "back": "<",
-    }
-
-# ==========================================
-# 2. MODERN GLASSMORPHIC THEME SYSTEM
+# 1. ULTRA-SAFE THEME (No Custom Fonts Required)
 # ==========================================
 BG_COLOR = get_color_from_hex("#070B12")
 CARD_COLOR = get_color_from_hex("#111827")
@@ -83,8 +50,16 @@ STATUS_TINT_MAP = {
 FONT_TITLE, FONT_SEC_LABEL, FONT_CARD_TITLE = sp(19), sp(11), sp(14)
 FONT_BODY, FONT_CAPTION, FONT_BIG_NUM = sp(12), sp(10), sp(22)
 
+# Safe Text-based Icons
+ICONS = {
+    "home": "HOME", "machines": "LIST", "breakdown": "CAPA", "settings": "SETTING",
+    "running": "R", "idle": "I", "breakdown_icon": "!", "maintenance": "M",
+    "check": "OK", "check_circle": "DONE", "calendar": "CAL", "add": "+",
+    "build": "FIX", "report": "REP", "inventory": "BOX", "handover": "NOTE", "back": "<-",
+}
+
 # ==========================================
-# 3. REUSABLE UI COMPONENTS (Pure Python)
+# 2. REUSABLE UI COMPONENTS
 # ==========================================
 class ModernBox(BoxLayout):
     def __init__(self, bg_color=CARD_COLOR, border_color=BORDER_COLOR, radius=dp(16), left_accent=None, auto_height=True, **kwargs):
@@ -157,9 +132,7 @@ class NavItem(ButtonBehavior, BoxLayout):
             self.p_rect = RoundedRectangle(pos=self.pill.pos, size=self.pill.size, radius=[dp(13)])
         self.pill.bind(pos=lambda i, v: setattr(self.p_rect, "pos", v), size=lambda i, v: setattr(self.p_rect, "size", v))
 
-        self.ic = Label(text=icon_char, font_name=ICON_FONT, font_size=dp(19), color=TEXT_MUTED)
-        self.pill.add_widget(self.ic)
-        self.tx = Label(text=title_str, font_size=FONT_CAPTION, color=TEXT_MUTED, size_hint_y=None, height=dp(15))
+        self.tx = Label(text=title_str, font_size=FONT_CAPTION, color=TEXT_MUTED, size_hint_y=None, height=dp(15), bold=True)
         self.add_widget(self.pill)
         self.add_widget(self.tx)
 
@@ -170,16 +143,15 @@ class NavItem(ButtonBehavior, BoxLayout):
 
     def set_active(self, active):
         self.p_col.rgba = ACCENT_TINT if active else (0, 0, 0, 0)
-        self.ic.color = ACCENT_COLOR if active else TEXT_MUTED
         self.tx.color, self.tx.bold = (ACCENT_COLOR, True) if active else (TEXT_MUTED, False)
 
 # ==========================================
-# 4. MAIN APPLICATION
+# 3. MAIN APPLICATION
 # ==========================================
 class MachineTrackerApp(App):
     def build(self):
         self.title = "S Matrix Smart Eng-Ops"
-        self.data_file = os.path.join(self.user_data_dir, "smatrix_breakdown_v10.json")
+        self.data_file = os.path.join(self.user_data_dir, "smatrix_safe_v11.json")
         self.load_data()
 
         self.current_tab = "HOME"
@@ -262,7 +234,7 @@ class MachineTrackerApp(App):
             if now - self.last_back_press < 2.0:
                 return False
             self.last_back_press = now
-            self.show_toast("Press back again to exit app")
+            self.show_toast("Press back again to exit")
             return True
         return False
 
@@ -294,7 +266,7 @@ class MachineTrackerApp(App):
                     "parts_changed": "Yes", "parts_desc": "Optical Fiber Head x1",
                     "param_changed": "Yes", "param_desc": "Sensitivity threshold 62% -> 75%",
                     "work_desc": "Dismantled sensor bracket, solvent cleaned lens, tested 500 ampoules.",
-                    "responsible": "Engr. Ahmeed Sunny & Md. Tanvir"
+                    "responsible": "Ahmeed Sunny & Tanvir"
                 }
             ]
         }
@@ -360,6 +332,8 @@ class MachineTrackerApp(App):
     def build_home(self):
         cfg = self.db["settings"]
         m_list = list(self.db["machines"].values())
+        total_m = max(1, len(m_list))
+
         c_run = sum(1 for m in m_list if m["status"] == "RUNNING")
         c_idle = sum(1 for m in m_list if m["status"] == "IDLE")
         c_bd = sum(1 for m in m_list if m["status"] == "BREAKDOWN")
@@ -389,37 +363,38 @@ class MachineTrackerApp(App):
 
         grid_2x2 = GridLayout(cols=2, size_hint_x=1, size_hint_y=None, height=dp(156), spacing=dp(8))
         cards_meta = [
-            ("RUNNING", ICONS["running"], str(c_run), "Running"), ("IDLE", ICONS["idle"], str(c_idle), "Idle"),
-            ("BREAKDOWN", ICONS["breakdown_icon"], str(c_bd), "Breakdown"), ("MAINTENANCE", ICONS["maintenance"], str(c_maint), "Maintenance"),
+            ("RUNNING", str(c_run), "Running"), ("IDLE", str(c_idle), "Idle"),
+            ("BREAKDOWN", str(c_bd), "Breakdown"), ("MAINTENANCE", str(c_maint), "Maintenance"),
         ]
-        for st_key, ic_ch, num_s, title_s in cards_meta:
+        for st_key, num_s, title_s in cards_meta:
             st_col = STATUS_MAP[st_key]
             tile = AnimatedCard(on_tap_cb=lambda k=st_key: self.open_filtered_machines(k), bg_color=CARD_INNER, border_color=BORDER_COLOR, radius=RADIUS_INNER, left_accent=st_col, auto_height=False, height=dp(74), orientation="horizontal", padding=[dp(12), dp(8)], spacing=dp(10))
             txt_col = BoxLayout(orientation="vertical", size_hint_x=1, spacing=dp(2))
             txt_col.add_widget(make_label(num_s, FONT_BIG_NUM, TEXT_PRIMARY, bold=True, height_dp=28))
             txt_col.add_widget(make_label(title_s, FONT_CAPTION, TEXT_MUTED, height_dp=16))
             tile.add_widget(txt_col)
-            tile.add_widget(Label(text=ic_ch, font_name=ICON_FONT, font_size=dp(20), color=st_col, size_hint_x=None, width=dp(28)))
             grid_2x2.add_widget(tile)
         summary_container.add_widget(grid_2x2)
         self.feed.add_widget(summary_container)
 
         qa_row = GridLayout(cols=3, size_hint_x=1, size_hint_y=None, height=dp(42), spacing=dp(6))
         qa_meta = [
-            (ICONS["report"], "Log Breakdown", STATUS_BREAKDOWN, lambda: self.open_breakdown_modal()),
-            (ICONS["inventory"], "Add Spare", ACCENT_COLOR, self.open_spare_modal),
-            (ICONS["handover"], "Handover", STATUS_RUNNING, self.open_handover_modal),
+            ("+ Breakdown", STATUS_BREAKDOWN, lambda: self.open_breakdown_modal()),
+            ("+ Spare Part", ACCENT_COLOR, self.open_spare_modal),
+            ("+ Handover", STATUS_RUNNING, self.open_handover_modal),
         ]
-        for ic_c, txt_s, ac_col, cb_fn in qa_meta:
+        for txt_s, ac_col, cb_fn in qa_meta:
             pill = AnimatedCard(on_tap_cb=cb_fn, bg_color=CARD_COLOR, border_color=BORDER_COLOR, radius=dp(21), auto_height=False, height=dp(42), orientation="horizontal", padding=[dp(8), 0], spacing=dp(6))
-            pill.add_widget(Label(text=ic_c, font_name=ICON_FONT, font_size=dp(15), color=ac_col, size_hint_x=None, width=dp(22)))
-            pill.add_widget(Label(text=txt_s, font_size=FONT_CAPTION, bold=True, color=TEXT_PRIMARY, halign="left", valign="middle"))
+            pill.add_widget(Label(text=txt_s, font_size=FONT_CAPTION, bold=True, color=ac_col, halign="center", valign="middle"))
             qa_row.add_widget(pill)
         self.feed.add_widget(qa_row)
 
         cal_box = ModernBox(orientation="vertical", padding=dp(12), spacing=dp(10))
         cal_hdr = BoxLayout(size_hint_y=None, height=dp(24))
-        cal_hdr.add_widget(make_label("OCTOBER PM SCHEDULE CALENDAR", FONT_SEC_LABEL, TEXT_MUTED, bold=True, height_dp=24))
+        cal_hdr.add_widget(make_label("PM SCHEDULE CALENDAR", FONT_SEC_LABEL, TEXT_MUTED, bold=True, height_dp=24))
+        btn_cfg_pm = Button(text="Set Schedule ->", font_size=FONT_CAPTION, bold=True, color=ACCENT_COLOR, background_normal="", background_color=(0, 0, 0, 0), size_hint=(None, None), size=(dp(95), dp(24)))
+        btn_cfg_pm.bind(on_release=lambda x: self.switch_tab("SETTINGS"))
+        cal_hdr.add_widget(btn_cfg_pm)
         cal_box.add_widget(cal_hdr)
 
         cal_scroll = ScrollView(do_scroll_x=True, do_scroll_y=False, size_hint_y=None, height=dp(60), bar_width=0)
@@ -449,6 +424,22 @@ class MachineTrackerApp(App):
 
         cal_scroll.add_widget(cal_strip)
         cal_box.add_widget(cal_scroll)
+
+        day_machines = [m for m in m_list if m.get("pm_day") == self.selected_cal_day]
+        if not day_machines:
+            empty_d = ModernBox(bg_color=CARD_INNER, radius=dp(10), auto_height=False, height=dp(42), padding=[dp(12), 0])
+            empty_d.add_widget(make_label(f"Oct {self.selected_cal_day}: No PM scheduled", FONT_BODY, TEXT_MUTED, height_dp=42))
+            cal_box.add_widget(empty_d)
+        else:
+            for pm_m in day_machines:
+                is_done = pm_m.get("pm_done_oct", False)
+                p_row = AnimatedCard(on_tap_cb=lambda mid=pm_m["id"]: self.open_pm_confirm_modal(mid), bg_color=CARD_INNER, border_color=BORDER_COLOR, radius=dp(10), left_accent=STATUS_RUNNING if is_done else STATUS_MAINTENANCE, auto_height=False, height=dp(52), orientation="horizontal", padding=[dp(12), dp(6)], spacing=dp(8))
+                p_info = BoxLayout(orientation="vertical", size_hint_x=1, spacing=dp(2))
+                p_info.add_widget(make_label(f"{pm_m['name']} ({pm_m['id']})", FONT_BODY, TEXT_PRIMARY, bold=True, height_dp=20))
+                st_str = "Completed for Oct" if is_done else f"Scheduled Oct {self.selected_cal_day} · Tap to complete"
+                p_info.add_widget(make_label(st_str, FONT_CAPTION, STATUS_RUNNING if is_done else ACCENT_COLOR, height_dp=16))
+                p_row.add_widget(p_info)
+                cal_box.add_widget(p_row)
         self.feed.add_widget(cal_box)
 
     def select_calendar_day(self, day_num):
@@ -463,6 +454,29 @@ class MachineTrackerApp(App):
         self.active_popup = pop
         pop.bind(on_dismiss=lambda *a: setattr(self, "active_popup", None))
         pop.open()
+
+    def open_pm_confirm_modal(self, m_id):
+        m = self.db["machines"][m_id]
+        box = BoxLayout(orientation="vertical", padding=dp(14), spacing=dp(10))
+        box.add_widget(make_label(f"Complete PM · {m['name']} ({m_id})", FONT_CARD_TITLE, ACCENT_COLOR, bold=True, height_dp=24))
+        self.make_input(box, "Maintenance Remarks", "Cleaned, lubricated & calibrated")
+
+        b_row = BoxLayout(size_hint_y=None, height=dp(44), spacing=dp(8))
+        b_can = Button(text="Cancel", background_normal="", background_color=CARD_INNER, color=TEXT_MUTED)
+        b_ok = Button(text="Mark Completed", background_normal="", background_color=STATUS_RUNNING, color=BG_COLOR, bold=True)
+        b_row.add_widget(b_can)
+        b_row.add_widget(b_ok)
+        box.add_widget(b_row)
+
+        pop = Popup(title="", separator_height=0, content=box, size_hint=(0.9, None), height=dp(210), background="", background_color=CARD_COLOR)
+        b_can.bind(on_release=pop.dismiss)
+        def _done(*a):
+            m["pm_done_oct"] = True
+            self.save_data()
+            pop.dismiss()
+            self.switch_tab("HOME", record_history=False)
+        b_ok.bind(on_release=_done)
+        self.open_tracked_popup(pop)
 
     def build_machines(self):
         top_bar = BoxLayout(size_hint_y=None, height=dp(38), spacing=dp(8))
@@ -494,10 +508,14 @@ class MachineTrackerApp(App):
             r1.add_widget(make_label(f"#{m['sl']} {m['name']} ({mid})", FONT_CARD_TITLE, TEXT_PRIMARY, bold=True, height_dp=24))
             r1.add_widget(make_status_pill(st, st))
             card.add_widget(r1)
-            card.add_widget(make_label(f"{m['product']} · Batch: {m['batch']} · PM: Oct {m.get('pm_day', 18)}", FONT_BODY, TEXT_MUTED, height_dp=20))
+
+            sub_line = f"Standby Mode · PM: Oct {m.get('pm_day', 18)}" if st == "IDLE" else f"{m['product']} · Batch: {m['batch']} · PM: Oct {m.get('pm_day', 18)}"
+            card.add_widget(make_label(sub_line, FONT_BODY, TEXT_MUTED, height_dp=20))
 
             if is_exp:
                 drawer = ModernBox(bg_color=CARD_INNER, radius=dp(10), orientation="vertical", padding=dp(10), spacing=dp(4))
+                drawer.add_widget(make_label(f"Batch Time: {m['act_time']} (Std: {m['std_time']}) · Delay: {m['delay_reason']}", FONT_CAPTION, ACCENT_COLOR, height_dp=18))
+                drawer.add_widget(make_label(f"Operator: {m['operator']}  |  Officer: {m['officer']}", FONT_CAPTION, TEXT_MUTED, height_dp=18))
                 b_open = Button(text="Edit Full Batch & Engineering Data ->", size_hint_y=None, height=dp(36), font_size=FONT_CAPTION, bold=True, background_normal="", background_color=ACCENT_COLOR, color=BG_COLOR)
                 b_open.bind(on_release=lambda x, m_id=mid: self.open_machine_editor(m_id))
                 drawer.add_widget(b_open)
@@ -533,16 +551,27 @@ class MachineTrackerApp(App):
         in_batch = self.make_input(b1, "Batch Number", m["batch"])
         self.feed.add_widget(b1)
 
+        b2 = ModernBox(orientation="vertical", padding=dp(14), spacing=dp(8), left_accent=STATUS_RUNNING)
+        b2.add_widget(make_label("2. BATCH COMPLETION TIME & DELAY REASON", FONT_SEC_LABEL, STATUS_RUNNING, bold=True, height_dp=18))
+        in_act = self.make_input(b2, "Time Taken to Finish Batch (Std: 6.0 Hours)", m["act_time"])
+        in_delay = self.make_input(b2, "Why Extra Time Needed? (সময় বেশি লাগলে কারণ)", m["delay_reason"])
+        self.feed.add_widget(b2)
+
         b4 = ModernBox(orientation="vertical", padding=dp(14), spacing=dp(8))
-        b4.add_widget(make_label("2. RESPONSIBLE OPERATOR & OFFICER", FONT_SEC_LABEL, TEXT_MUTED, bold=True, height_dp=18))
+        b4.add_widget(make_label("3. RESPONSIBLE OPERATOR & OFFICER", FONT_SEC_LABEL, TEXT_MUTED, bold=True, height_dp=18))
         in_op = self.make_input(b4, "Machine Operator Name", m["operator"])
         in_off = self.make_input(b4, "Responsible Officer Name", m["officer"])
         self.feed.add_widget(b4)
 
-        btn_sv = Button(text="SAVE MACHINE RECORD", size_hint_y=None, height=dp(48), background_normal="", background_color=ACCENT_COLOR, color=BG_COLOR, bold=True)
+        btn_sv = Button(text="SAVE MACHINE BATCH RECORD", size_hint_y=None, height=dp(48), background_normal="", background_color=ACCENT_COLOR, color=BG_COLOR, bold=True)
         def _save_all(*a):
-            m["status"], m["product"], m["batch"] = sp_st.text, in_prod.text.strip(), in_batch.text.strip()
-            m["operator"], m["officer"] = in_op.text.strip(), in_off.text.strip()
+            m["status"] = sp_st.text
+            m["product"] = in_prod.text.strip()
+            m["batch"] = in_batch.text.strip()
+            m["act_time"] = in_act.text.strip()
+            m["delay_reason"] = in_delay.text.strip()
+            m["operator"] = in_op.text.strip()
+            m["officer"] = in_off.text.strip()
             self.save_data()
             self.expanded_machine_id = m_id
             self.go_back_step()
@@ -653,20 +682,27 @@ class MachineTrackerApp(App):
         def _sv_bd(*a):
             mid, mname = sp_m.text.split(" - ")
             self.db["machines"][mid]["status"] = "BREAKDOWN"
-            p_chg, pr_chg = sp_parts.text, sp_param.text if sp_param.text in ("Yes", "No") else "No"
+            p_chg = sp_parts.text
+            pr_chg = sp_param.text if sp_param.text in ("Yes", "No") else "No"
             self.db["breakdown_history"].insert(0, {
                 "id": f"BD-{100 + len(self.db['breakdown_history']) + 1}",
-                "machine_id": mid, "machine_name": mname, "date_time": in_dt.text.strip(),
-                "completed_time": in_comp.text.strip(), "issue": in_iss.text.strip() or "Mechanical Fault",
-                "rca": in_rca.text.strip() or "Under investigation", "corrective": in_cor.text.strip() or "Rectified",
-                "parts_changed": p_chg, "parts_desc": in_parts_desc.text.strip() if p_chg == "Yes" else "None",
-                "param_changed": pr_chg, "param_desc": in_param_desc.text.strip() or "Standard",
+                "machine_id": mid, "machine_name": mname,
+                "date_time": in_dt.text.strip(),
+                "completed_time": in_comp.text.strip(),
+                "issue": in_iss.text.strip() or "Mechanical/Electrical Fault",
+                "rca": in_rca.text.strip() or "Under investigation",
+                "corrective": in_cor.text.strip() or "Rectified & tested",
+                "parts_changed": p_chg,
+                "parts_desc": in_parts_desc.text.strip() if p_chg == "Yes" else "None",
+                "param_changed": pr_chg,
+                "param_desc": in_param_desc.text.strip() or "Standard",
                 "work_desc": in_work.text.strip() or "Completed full checkup",
                 "responsible": in_resp.text.strip() or self.db["settings"]["user_name"]
             })
             self.save_data()
             pop.dismiss()
             self.switch_tab("BREAKDOWN")
+
         b_ok.bind(on_release=_sv_bd)
         self.open_tracked_popup(pop)
 
@@ -688,12 +724,37 @@ class MachineTrackerApp(App):
 
         b_sv = Button(text="Save Profile", size_hint_y=None, height=dp(42), background_normal="", background_color=ACCENT_COLOR, color=BG_COLOR, bold=True)
         def _sv_p(*a):
-            cfg["user_name"], cfg["role"], cfg["shift"], cfg["plant"] = in_name.text.strip(), in_role.text.strip(), in_shift.text.strip(), in_plant.text.strip()
+            cfg["user_name"] = in_name.text.strip()
+            cfg["role"] = in_role.text.strip()
+            cfg["shift"] = in_shift.text.strip()
+            cfg["plant"] = in_plant.text.strip()
             self.save_data()
             self.switch_tab("HOME")
         b_sv.bind(on_release=_sv_p)
         p_box.add_widget(b_sv)
         self.feed.add_widget(p_box)
+
+        pm_cfg_box = ModernBox(orientation="vertical", padding=dp(14), spacing=dp(8), left_accent=STATUS_MAINTENANCE)
+        pm_cfg_box.add_widget(make_label("MACHINE PM SCHEDULE (SYNCED TO HOME CALENDAR)", FONT_SEC_LABEL, STATUS_MAINTENANCE, bold=True, height_dp=20))
+        day_vals = [f"Oct {d}" for d in range(1, 32)]
+        for mid in self.db["machine_order"]:
+            m = self.db["machines"][mid]
+            row = BoxLayout(orientation="horizontal", size_hint_y=None, height=dp(38), spacing=dp(8))
+            row.add_widget(make_label(f"#{m['sl']} {m['name']} ({mid})", FONT_BODY, TEXT_PRIMARY, height_dp=36))
+            sp_day = Spinner(text=f"Oct {m.get('pm_day', 18)}", values=day_vals, size_hint=(None, None), size=(dp(96), dp(34)), font_size=FONT_CAPTION, bold=True, background_normal="", background_color=CARD_INNER, color=ACCENT_COLOR)
+            def _on_day_change(spinner_inst, new_txt, mach_id=mid):
+                try:
+                    d_int = int(new_txt.replace("Oct ", "").strip())
+                    self.db["machines"][mach_id]["pm_day"] = d_int
+                    self.db["machines"][mach_id]["pm_done_oct"] = False
+                    self.selected_cal_day = d_int
+                    self.save_data()
+                except Exception:
+                    pass
+            sp_day.bind(text=_on_day_change)
+            row.add_widget(sp_day)
+            pm_cfg_box.add_widget(row)
+        self.feed.add_widget(pm_cfg_box)
 
     def make_input(self, parent, label_str, default_val=""):
         wrap = BoxLayout(orientation="vertical", size_hint_y=None, height=dp(58), spacing=dp(3))
