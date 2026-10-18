@@ -1,9 +1,11 @@
 import json
 import os
+import time
 from datetime import datetime
 from kivy.app import App
 from kivy.lang import Builder
 from kivy.core.text import LabelBase
+from kivy.core.window import Window
 from kivy.clock import Clock
 from kivy.animation import Animation
 from kivy.uix.boxlayout import BoxLayout
@@ -156,20 +158,42 @@ class NavItem(ButtonBehavior, BoxLayout):
 class MachineTrackerApp(App):
     def build(self):
         self.title = "S Matrix Smart Eng-Ops"
-        self.data_file = os.path.join(self.user_data_dir, "smatrix_breakdown_v6.json")
+        self.data_file = os.path.join(self.user_data_dir, "smatrix_breakdown_v8.json")
         self.load_data()
 
         self.current_tab = "HOME"
-        self.selected_cal_day = 17
+        self.tab_history = []
+        self.active_popup = None
+        self.last_back_press = 0.0
+
+        self.selected_cal_day = 18
         self.machine_filter = "ALL"
         self.expanded_machine_id = None
         self.selected_machine_id = self.db["machine_order"][0]
+
+        # Bind Android Hardware/Gesture Back Button
+        Window.bind(on_keyboard=self.on_back_button)
 
         self.root_box = BoxLayout(orientation="vertical")
         with self.root_box.canvas.before:
             Color(*T.BG_COLOR)
             self.bg_rect = Rectangle(pos=self.root_box.pos, size=self.root_box.size)
         self.root_box.bind(pos=lambda i, v: setattr(self.bg_rect, "pos", v), size=lambda i, v: setattr(self.bg_rect, "size", v))
+
+        # Subtle Toast Banner for "Press back again to exit"
+        self.toast_bar = ModernBox(
+            bg_color=T.CARD_INNER,
+            border_color=T.ACCENT_COLOR,
+            radius=dp(10),
+            auto_height=False,
+            height=0,
+            size_hint_y=None,
+            padding=[dp(12), 0]
+        )
+        self.toast_bar.opacity = 0.0
+        self.toast_lbl = make_label("", T.FONT_CAPTION, T.ACCENT_COLOR, bold=True, halign="center", height_dp=28)
+        self.toast_bar.add_widget(self.toast_lbl)
+        self.root_box.add_widget(self.toast_bar)
 
         self.scroll = ScrollView(do_scroll_x=False, bar_width=dp(2))
         self.feed = BoxLayout(orientation="vertical", size_hint_x=1, size_hint_y=None, padding=[T.PAD_SCREEN, dp(14), T.PAD_SCREEN, dp(28)], spacing=dp(14))
@@ -191,15 +215,54 @@ class MachineTrackerApp(App):
         self.nav_items = {
             "HOME": NavItem(T.ICONS["home"], "Home", lambda: self.switch_tab("HOME")),
             "MACHINES": NavItem(T.ICONS["machines"], "Machines", lambda: self.switch_tab("MACHINES")),
-            "BREAKDOWN": NavItem(T.ICONS["history"], "Breakdown", lambda: self.switch_tab("BREAKDOWN")),
+            "BREAKDOWN": NavItem(T.ICONS["breakdown"], "Breakdown", lambda: self.switch_tab("BREAKDOWN")),
             "SETTINGS": NavItem(T.ICONS["settings"], "Settings", lambda: self.switch_tab("SETTINGS")),
         }
         for item in self.nav_items.values():
             self.nav_bar.add_widget(item)
         self.root_box.add_widget(self.nav_bar)
 
-        self.switch_tab("HOME")
+        self.switch_tab("HOME", record_history=False)
         return self.root_box
+
+    def show_toast(self, message):
+        self.toast_lbl.text = message
+        Animation(height=dp(32), opacity=1.0, duration=0.18).start(self.toast_bar)
+        Clock.schedule_once(lambda dt: Animation(height=0, opacity=0.0, duration=0.18).start(self.toast_bar), 2.0)
+
+    def on_back_button(self, window, key, *args):
+        if key == 27:  # Android Back Button / ESC
+            # 1. If a popup is open, close the popup first
+            if self.active_popup is not None:
+                self.active_popup.dismiss()
+                self.active_popup = None
+                return True
+
+            # 2. If inside an expanded machine card on Machines list, collapse it first
+            if self.current_tab == "MACHINES" and self.expanded_machine_id is not None:
+                self.expanded_machine_id = None
+                self.switch_tab("MACHINES", record_history=False)
+                return True
+
+            # 3. Step-by-step back through tab_history
+            if self.tab_history:
+                prev_tab = self.tab_history.pop()
+                self.switch_tab(prev_tab, record_history=False)
+                return True
+
+            # 4. If on any non-HOME tab with empty history, go to HOME
+            if self.current_tab != "HOME":
+                self.switch_tab("HOME", record_history=False)
+                return True
+
+            # 5. Already on HOME: require double press within 2 seconds to exit
+            now = time.time()
+            if now - self.last_back_press < 2.0:
+                return False  # Allow exit on second press
+            self.last_back_press = now
+            self.show_toast("Press back again to exit app")
+            return True
+        return False
 
     def load_data(self):
         if os.path.exists(self.data_file):
@@ -221,14 +284,14 @@ class MachineTrackerApp(App):
             "breakdown_history": [
                 {
                     "id": "BD-101", "machine_id": "K02PR-106", "machine_name": "Ampoule Labeling 01",
-                    "date_time": "17 Oct 2026, 09:30 AM", "completed_time": "17 Oct 2026, 10:15 AM",
+                    "date_time": "18 Oct 2026, 09:30 AM", "completed_time": "18 Oct 2026, 10:15 AM",
                     "issue": "Label gap optical sensor false trigger at >320 RPM",
                     "rca": "Adhesive residue on optical fiber head",
                     "corrective": "Cleaned optical lens with IPA & recalibrated threshold",
                     "parts_changed": "Yes", "parts_desc": "Optical Fiber Head x1",
-                    "param_changed": "No", "param_desc": "N/A",
-                    "work_desc": "Dismantled sensor housing, solvent cleaned, re-taught sensitivity setting.",
-                    "responsible": "Ahmeed Sunny & Tanvir"
+                    "param_changed": "Yes", "param_desc": "Sensitivity threshold 62% -> 75%",
+                    "work_desc": "Dismantled sensor bracket, solvent cleaned lens, tested 500 ampoules.",
+                    "responsible": "Engr. Ahmeed Sunny & Md. Tanvir"
                 }
             ]
         }
@@ -259,7 +322,14 @@ class MachineTrackerApp(App):
         anim = Animation(opacity=1.0, duration=0.22, t="out_cubic")
         Clock.schedule_once(lambda dt: anim.start(widget), delay)
 
-    def switch_tab(self, tab_name):
+    def switch_tab(self, tab_name, record_history=True):
+        if record_history and self.current_tab and self.current_tab != tab_name:
+            if tab_name == "HOME":
+                self.tab_history.clear()
+            else:
+                if not self.tab_history or self.tab_history[-1] != self.current_tab:
+                    self.tab_history.append(self.current_tab)
+
         self.current_tab = tab_name
         for k, item in self.nav_items.items():
             item.set_active(k == tab_name or (tab_name == "MACHINE_DETAIL" and k == "MACHINES"))
@@ -281,6 +351,13 @@ class MachineTrackerApp(App):
         for i, child in enumerate(reversed(self.feed.children)):
             self.animate_widget_in(child, delay=i * 0.035)
 
+    def go_back_step(self):
+        if self.tab_history:
+            prev = self.tab_history.pop()
+            self.switch_tab(prev, record_history=False)
+        else:
+            self.switch_tab("HOME", record_history=False)
+
     def build_home(self):
         cfg = self.db["settings"]
         m_list = list(self.db["machines"].values())
@@ -291,9 +368,7 @@ class MachineTrackerApp(App):
         c_bd = sum(1 for m in m_list if m["status"] == "BREAKDOWN")
         c_maint = sum(1 for m in m_list if m["status"] == "MAINTENANCE")
         uptime_pct = int(round((c_run / total_m) * 100))
-
-        pm_due_today = sum(1 for m in m_list if m.get("pm_day", 17) <= 17 and not m.get("pm_done_oct", False))
-        open_bd = sum(1 for b in self.db["breakdown_history"] if "Active" in b.get("completed_time", ""))
+        pm_due_today = sum(1 for m in m_list if m.get("pm_day", 18) <= 18 and not m.get("pm_done_oct", False))
 
         greet_box = ModernBox(orientation="horizontal", auto_height=False, height=dp(90), padding=[dp(16), dp(12)], spacing=dp(10), left_accent=T.ACCENT_COLOR)
         g_left = BoxLayout(orientation="vertical", size_hint_x=1, spacing=dp(2))
@@ -322,7 +397,7 @@ class MachineTrackerApp(App):
         cards_meta = [
             ("RUNNING", T.ICONS["running"], str(c_run), "Running"),
             ("IDLE", T.ICONS["idle"], str(c_idle), "Idle"),
-            ("BREAKDOWN", T.ICONS["breakdown"], str(c_bd), "Breakdown"),
+            ("BREAKDOWN", T.ICONS["breakdown_icon"], str(c_bd), "Breakdown"),
             ("MAINTENANCE", T.ICONS["maintenance"], str(c_maint), "Maintenance"),
         ]
         for st_key, ic_ch, num_s, title_s in cards_meta:
@@ -339,7 +414,7 @@ class MachineTrackerApp(App):
         focus_strip = ModernBox(bg_color=T.CARD_INNER, border_color=T.BORDER_COLOR, radius=dp(10), auto_height=False, height=dp(54), orientation="horizontal", padding=[dp(8), dp(6)])
         f_items = [
             (str(pm_due_today), "Due PMs", T.STATUS_BREAKDOWN if pm_due_today > 0 else T.STATUS_RUNNING),
-            (str(c_bd), "Active BD", T.STATUS_BREAKDOWN if c_bd > 0 else T.TEXT_PRIMARY),
+            (str(len(self.db["breakdown_history"])), "BD Logs", T.STATUS_MAINTENANCE),
             (f"{uptime_pct}%", "Line Uptime", T.ACCENT_COLOR),
         ]
         for idx, (val_s, lbl_s, col_v) in enumerate(f_items):
@@ -396,7 +471,7 @@ class MachineTrackerApp(App):
             if has_machines:
                 dot = Widget(size_hint=(None, None), size=(dp(6), dp(6)))
                 with dot.canvas:
-                    Color(*(T.STATUS_MAINTENANCE if d_num >= 17 else T.STATUS_BREAKDOWN))
+                    Color(*(T.STATUS_MAINTENANCE if d_num >= 18 else T.STATUS_BREAKDOWN))
                     el = Ellipse(pos=dot.pos, size=dot.size)
                 dot.bind(pos=lambda i, v: setattr(el, "pos", v), size=lambda i, v: setattr(el, "size", v))
                 dot_wrap.add_widget(dot)
@@ -461,11 +536,16 @@ class MachineTrackerApp(App):
 
     def select_calendar_day(self, day_num):
         self.selected_cal_day = day_num
-        self.switch_tab("HOME")
+        self.switch_tab("HOME", record_history=False)
 
     def open_filtered_machines(self, status_key):
         self.machine_filter = status_key
         self.switch_tab("MACHINES")
+
+    def open_tracked_popup(self, pop):
+        self.active_popup = pop
+        pop.bind(on_dismiss=lambda *a: setattr(self, "active_popup", None))
+        pop.open()
 
     def open_pm_confirm_modal(self, m_id):
         m = self.db["machines"][m_id]
@@ -486,14 +566,17 @@ class MachineTrackerApp(App):
             m["pm_done_oct"] = True
             self.save_data()
             pop.dismiss()
-            self.switch_tab("HOME")
+            self.switch_tab("HOME", record_history=False)
         b_ok.bind(on_release=_done)
-        pop.open()
+        self.open_tracked_popup(pop)
 
     def build_machines(self):
         top_bar = BoxLayout(size_hint_y=None, height=dp(38), spacing=dp(8))
-        top_bar.add_widget(make_label(f"PLANT MACHINES ({len(self.db['machine_order'])})", T.FONT_SEC_LABEL, T.TEXT_MUTED, bold=True, height_dp=38))
-        b_add = Button(text="+ Add Machine", size_hint=(None, None), size=(dp(115), dp(34)), font_size=T.FONT_CAPTION, bold=True, background_normal="", background_color=T.ACCENT_TINT, color=T.ACCENT_COLOR)
+        b_back = Button(text="<- Home", size_hint=(None, None), size=(dp(72), dp(34)), font_size=T.FONT_CAPTION, bold=True, background_normal="", background_color=T.CARD_COLOR, color=T.ACCENT_COLOR)
+        b_back.bind(on_release=lambda x: self.go_back_step())
+        top_bar.add_widget(b_back)
+        top_bar.add_widget(make_label(f"MACHINES ({len(self.db['machine_order'])})", T.FONT_SEC_LABEL, T.TEXT_MUTED, bold=True, height_dp=38))
+        b_add = Button(text="+ Add", size_hint=(None, None), size=(dp(75), dp(34)), font_size=T.FONT_CAPTION, bold=True, background_normal="", background_color=T.ACCENT_TINT, color=T.ACCENT_COLOR)
         b_add.bind(on_release=lambda x: self.open_add_machine_modal())
         top_bar.add_widget(b_add)
         self.feed.add_widget(top_bar)
@@ -536,11 +619,11 @@ class MachineTrackerApp(App):
 
     def set_machine_filter(self, flt):
         self.machine_filter = flt
-        self.switch_tab("MACHINES")
+        self.switch_tab("MACHINES", record_history=False)
 
     def toggle_machine_expand(self, m_id):
         self.expanded_machine_id = None if self.expanded_machine_id == m_id else m_id
-        self.switch_tab("MACHINES")
+        self.switch_tab("MACHINES", record_history=False)
 
     def open_machine_editor(self, m_id):
         self.selected_machine_id = m_id
@@ -550,7 +633,7 @@ class MachineTrackerApp(App):
         m = self.db["machines"][m_id]
         hdr = BoxLayout(size_hint_y=None, height=dp(40), spacing=dp(8))
         b_back = Button(text="<- Back", size_hint=(None, None), size=(dp(76), dp(36)), font_size=T.FONT_BODY, bold=True, background_normal="", background_color=T.CARD_COLOR, color=T.ACCENT_COLOR)
-        b_back.bind(on_release=lambda x: self.switch_tab("MACHINES"))
+        b_back.bind(on_release=lambda x: self.go_back_step())
         hdr.add_widget(b_back)
         hdr.add_widget(make_label(f"#{m['sl']} {m['name']} ({m_id})", T.FONT_TITLE, T.TEXT_PRIMARY, bold=True, height_dp=36))
         self.feed.add_widget(hdr)
@@ -586,17 +669,17 @@ class MachineTrackerApp(App):
             m["officer"] = in_off.text.strip()
             self.save_data()
             self.expanded_machine_id = m_id
-            self.switch_tab("MACHINES")
+            self.go_back_step()
         btn_sv.bind(on_release=_save_all)
         self.feed.add_widget(btn_sv)
 
-    # =========================================================================
-    # BREAKDOWN HISTORY TAB (INDIVIDUAL MACHINE BREAKDOWN DETAILS WITH DYNAMIC YES/NO DROPDOWNS)
-    # =========================================================================
     def build_breakdown_history(self):
-        hdr = BoxLayout(size_hint_y=None, height=dp(36))
-        hdr.add_widget(make_label("INDIVIDUAL MACHINE BREAKDOWN HISTORY", T.FONT_SEC_LABEL, T.TEXT_MUTED, bold=True, height_dp=36))
-        b_new = Button(text="+ Log Breakdown", size_hint=(None, None), size=(dp(115), dp(32)), font_size=T.FONT_CAPTION, bold=True, background_normal="", background_color=T.ACCENT_TINT, color=T.ACCENT_COLOR)
+        hdr = BoxLayout(size_hint_y=None, height=dp(38), spacing=dp(8))
+        b_back = Button(text="<- Back", size_hint=(None, None), size=(dp(72), dp(34)), font_size=T.FONT_CAPTION, bold=True, background_normal="", background_color=T.CARD_COLOR, color=T.ACCENT_COLOR)
+        b_back.bind(on_release=lambda x: self.go_back_step())
+        hdr.add_widget(b_back)
+        hdr.add_widget(make_label("BREAKDOWN HISTORY", T.FONT_SEC_LABEL, T.TEXT_MUTED, bold=True, height_dp=36))
+        b_new = Button(text="+ Log Breakdown", size_hint=(None, None), size=(dp(115), dp(34)), font_size=T.FONT_CAPTION, bold=True, background_normal="", background_color=T.ACCENT_TINT, color=T.ACCENT_COLOR)
         b_new.bind(on_release=lambda x: self.open_breakdown_modal())
         hdr.add_widget(b_new)
         self.feed.add_widget(hdr)
@@ -617,68 +700,118 @@ class MachineTrackerApp(App):
             self.feed.add_widget(card)
 
     def open_breakdown_modal(self):
-        box = BoxLayout(orientation="vertical", padding=dp(14), spacing=dp(8))
+        scroll_p = ScrollView(do_scroll_x=False, size_hint=(1, 1))
+        box = BoxLayout(orientation="vertical", size_hint_y=None, padding=dp(14), spacing=dp(8))
+        box.bind(minimum_height=box.setter("height"))
+
+        box.add_widget(make_label("LOG MACHINE BREAKDOWN DETAILS", T.FONT_CARD_TITLE, T.ACCENT_COLOR, bold=True, height_dp=24))
         m_opts = [f"{mid} - {self.db['machines'][mid]['name']}" for mid in self.db["machine_order"]]
         sp_m = Spinner(text=m_opts[0], values=m_opts, size_hint_y=None, height=dp(40), background_normal="", background_color=T.CARD_INNER, color=T.ACCENT_COLOR, bold=True)
         box.add_widget(sp_m)
 
+        in_dt = self.make_input(box, "Start Date & Time", datetime.now().strftime("%d %b %Y, %H:%M"))
         in_iss = self.make_input(box, "Issue Description (কি সমস্যা হয়েছে)", "")
         in_rca = self.make_input(box, "Root Cause (মূল কারণ)", "")
         in_cor = self.make_input(box, "Corrective Action (সমাধান)", "")
 
-        # Parts Change Dropdown (Yes/No)
-        box.add_widget(make_label("Any Parts Change? (পার্টস পরিবর্তন হয়েছে কি না)", T.FONT_CAPTION, T.TEXT_MUTED, height_dp=16))
-        sp_parts = Spinner(text="No", values=["No", "Yes"], size_hint_y=None, height=dp(36), background_normal="", background_color=T.CARD_INNER, color=T.TEXT_PRIMARY)
-        box.add_widget(sp_parts)
-        in_parts_desc = self.make_input(box, "Specify Parts Name & Qty (কী পার্টস দিয়েছেন)", "None")
+        # Dynamic Parts Dropdown (Yes -> Opens Box)
+        parts_box = BoxLayout(orientation="vertical", size_hint_y=None, height=dp(58), spacing=dp(3))
+        parts_box.add_widget(make_label("Any Parts Change? (Yes/No)", T.FONT_CAPTION, T.TEXT_MUTED, height_dp=16))
+        sp_parts = Spinner(text="No", values=["No", "Yes"], size_hint_y=None, height=dp(38), background_normal="", background_color=T.CARD_INNER, color=T.TEXT_PRIMARY, bold=True)
+        parts_box.add_widget(sp_parts)
+        box.add_widget(parts_box)
 
-        # Parameter Change Dropdown (Yes/No)
-        box.add_widget(make_label("Parameter Change? (প্যারামিটার পরিবর্তন হয়েছে কি না)", T.FONT_CAPTION, T.TEXT_MUTED, height_dp=16))
-        sp_param = Spinner(text="No", values=["No", "Yes"], size_hint_y=None, height=dp(36), background_normal="", background_color=T.CARD_INNER, color=T.TEXT_PRIMARY)
-        box.add_widget(sp_param)
-        in_param_desc = self.make_input(box, "Specify Parameter Changes (কী পরিবর্তন হয়েছে)", "None")
+        parts_entry_box = BoxLayout(orientation="vertical", size_hint_y=None, height=0, opacity=0.0, spacing=dp(3))
+        lbl_p = make_label("What Parts Were Given? (কী পার্টস দিয়েছেন):", T.FONT_CAPTION, T.ACCENT_COLOR, bold=True, height_dp=0)
+        in_parts_desc = TextInput(text="", hint_text="Enter parts name & qty...", multiline=False, font_size=T.FONT_BODY, size_hint_y=None, height=0, background_normal="", background_color=T.CARD_INNER, foreground_color=T.TEXT_PRIMARY, padding=[dp(10), dp(8)])
+        parts_entry_box.add_widget(lbl_p)
+        parts_entry_box.add_widget(in_parts_desc)
+        box.add_widget(parts_entry_box)
 
-        in_work = self.make_input(box, "Work Description (কাজের বিস্তারিত বিবরণ)", "Diagnosed and resolved")
+        def _toggle_parts(sp_inst, val):
+            if val == "Yes":
+                lbl_p.height = dp(16)
+                in_parts_desc.height = dp(38)
+                Animation(height=dp(58), opacity=1.0, duration=0.18).start(parts_entry_box)
+            else:
+                lbl_p.height = 0
+                in_parts_desc.height = 0
+                Animation(height=0, opacity=0.0, duration=0.18).start(parts_entry_box)
+        sp_parts.bind(text=_toggle_parts)
+
+        # Dynamic Parameter Dropdown (Yes/No -> Opens Entry Box)
+        param_box = BoxLayout(orientation="vertical", size_hint_y=None, height=dp(58), spacing=dp(3))
+        param_box.add_widget(make_label("Parameter Change? (Yes/No)", T.FONT_CAPTION, T.TEXT_MUTED, height_dp=16))
+        sp_param = Spinner(text="Select Option", values=["Yes", "No"], size_hint_y=None, height=dp(38), background_normal="", background_color=T.CARD_INNER, color=T.TEXT_PRIMARY, bold=True)
+        param_box.add_widget(sp_param)
+        box.add_widget(param_box)
+
+        param_entry_box = BoxLayout(orientation="vertical", size_hint_y=None, height=0, opacity=0.0, spacing=dp(3))
+        lbl_pr = make_label("Parameter Details / Remarks:", T.FONT_CAPTION, T.ACCENT_COLOR, bold=True, height_dp=0)
+        in_param_desc = TextInput(text="", hint_text="Enter parameter details...", multiline=False, font_size=T.FONT_BODY, size_hint_y=None, height=0, background_normal="", background_color=T.CARD_INNER, foreground_color=T.TEXT_PRIMARY, padding=[dp(10), dp(8)])
+        param_entry_box.add_widget(lbl_pr)
+        param_entry_box.add_widget(in_param_desc)
+        box.add_widget(param_entry_box)
+
+        def _toggle_param(sp_inst, val):
+            if val in ("Yes", "No"):
+                lbl_pr.text = "Which Parameter Changed?:" if val == "Yes" else "Why No Parameter Changed / Remarks:"
+                lbl_pr.height = dp(16)
+                in_param_desc.height = dp(38)
+                Animation(height=dp(58), opacity=1.0, duration=0.18).start(param_entry_box)
+        sp_param.bind(text=_toggle_param)
+
+        in_work = self.make_input(box, "Work Description (কাজের বিস্তারিত বিবরণ)", "")
         in_comp = self.make_input(box, "Completed Time & Date", datetime.now().strftime("%d %b %Y, %H:%M"))
-        in_resp = self.make_input(box, "Responsible Person(s) (দায়িত্বপ্রাপ্ত ব্যক্তি)", self.db["settings"]["user_name"])
+        in_resp = self.make_input(box, "Responsible Person(s) (কে কে দায়িত্বে ছিলেন)", self.db["settings"]["user_name"])
 
-        b_row = BoxLayout(size_hint_y=None, height=dp(44), spacing=dp(8))
+        b_row = BoxLayout(size_hint_y=None, height=dp(46), spacing=dp(8))
         b_can = Button(text="Cancel", background_normal="", background_color=T.CARD_INNER, color=T.TEXT_MUTED)
         b_ok = Button(text="Save Breakdown", background_normal="", background_color=T.ACCENT_COLOR, color=T.BG_COLOR, bold=True)
         b_row.add_widget(b_can)
         b_row.add_widget(b_ok)
         box.add_widget(b_row)
 
-        pop = Popup(title="", separator_height=0, content=box, size_hint=(0.94, None), height=dp(620), background="", background_color=T.CARD_COLOR)
+        scroll_p.add_widget(box)
+        pop = Popup(title="", separator_height=0, content=scroll_p, size_hint=(0.94, 0.88), background="", background_color=T.CARD_COLOR)
         b_can.bind(on_release=pop.dismiss)
 
         def _sv_bd(*a):
             mid, mname = sp_m.text.split(" - ")
             self.db["machines"][mid]["status"] = "BREAKDOWN"
+            p_chg = sp_parts.text
+            pr_chg = sp_param.text if sp_param.text in ("Yes", "No") else "No"
             self.db["breakdown_history"].insert(0, {
                 "id": f"BD-{100 + len(self.db['breakdown_history']) + 1}",
                 "machine_id": mid, "machine_name": mname,
-                "date_time": datetime.now().strftime("%d %b %Y, %H:%M"),
+                "date_time": in_dt.text.strip(),
                 "completed_time": in_comp.text.strip(),
                 "issue": in_iss.text.strip() or "Mechanical/Electrical Fault",
                 "rca": in_rca.text.strip() or "Under investigation",
-                "corrective": in_cor.text.strip() or "Standard corrective action",
-                "parts_changed": sp_parts.text,
-                "parts_desc": in_parts_desc.text.strip() if sp_parts.text == "Yes" else "None",
-                "param_changed": sp_param.text,
-                "param_desc": in_param_desc.text.strip() if sp_param.text == "Yes" else "None",
-                "work_desc": in_work.text.strip(),
-                "responsible": in_resp.text.strip()
+                "corrective": in_cor.text.strip() or "Rectified & tested",
+                "parts_changed": p_chg,
+                "parts_desc": in_parts_desc.text.strip() if p_chg == "Yes" else "None",
+                "param_changed": pr_chg,
+                "param_desc": in_param_desc.text.strip() or "Standard",
+                "work_desc": in_work.text.strip() or "Completed full checkup",
+                "responsible": in_resp.text.strip() or self.db["settings"]["user_name"]
             })
             self.save_data()
             pop.dismiss()
             self.switch_tab("BREAKDOWN")
 
         b_ok.bind(on_release=_sv_bd)
-        pop.open()
+        self.open_tracked_popup(pop)
 
     def build_settings(self):
         cfg = self.db["settings"]
+        hdr = BoxLayout(size_hint_y=None, height=dp(38), spacing=dp(8))
+        b_back = Button(text="<- Back", size_hint=(None, None), size=(dp(72), dp(34)), font_size=T.FONT_CAPTION, bold=True, background_normal="", background_color=T.CARD_COLOR, color=T.ACCENT_COLOR)
+        b_back.bind(on_release=lambda x: self.go_back_step())
+        hdr.add_widget(b_back)
+        hdr.add_widget(make_label("SETTINGS & PM SCHEDULE", T.FONT_SEC_LABEL, T.TEXT_MUTED, bold=True, height_dp=36))
+        self.feed.add_widget(hdr)
+
         p_box = ModernBox(orientation="vertical", padding=dp(14), spacing=dp(8), left_accent=T.ACCENT_COLOR)
         p_box.add_widget(make_label("ENGINEER PROFILE & SHIFT", T.FONT_SEC_LABEL, T.ACCENT_COLOR, bold=True, height_dp=20))
         in_name = self.make_input(p_box, "Engineer Name", cfg["user_name"])
@@ -700,8 +833,6 @@ class MachineTrackerApp(App):
 
         pm_cfg_box = ModernBox(orientation="vertical", padding=dp(14), spacing=dp(8), left_accent=T.STATUS_MAINTENANCE)
         pm_cfg_box.add_widget(make_label("MACHINE PM SCHEDULE (SYNCED TO HOME CALENDAR)", T.FONT_SEC_LABEL, T.STATUS_MAINTENANCE, bold=True, height_dp=20))
-        pm_cfg_box.add_widget(make_label("Select October PM date for any machine below:", T.FONT_CAPTION, T.TEXT_MUTED, height_dp=18))
-
         day_vals = [f"Oct {d}" for d in range(1, 32)]
         for mid in self.db["machine_order"]:
             m = self.db["machines"][mid]
@@ -738,7 +869,7 @@ class MachineTrackerApp(App):
         pop = Popup(title="", separator_height=0, content=box, size_hint=(0.9, None), height=dp(220), background="", background_color=T.CARD_COLOR)
         b_ok.bind(on_release=pop.dismiss)
         box.add_widget(b_ok)
-        pop.open()
+        self.open_tracked_popup(pop)
 
     def open_handover_modal(self):
         box = BoxLayout(orientation="vertical", padding=dp(14), spacing=dp(8))
@@ -747,7 +878,36 @@ class MachineTrackerApp(App):
         pop = Popup(title="", separator_height=0, content=box, size_hint=(0.9, None), height=dp(170), background="", background_color=T.CARD_COLOR)
         b_ok.bind(on_release=pop.dismiss)
         box.add_widget(b_ok)
-        pop.open()
+        self.open_tracked_popup(pop)
+
+    def open_add_machine_modal(self):
+        box = BoxLayout(orientation="vertical", padding=dp(14), spacing=dp(8))
+        in_n = self.make_input(box, "Machine Name", "")
+        in_i = self.make_input(box, "Machine ID", f"K02PR-{150 + len(self.db['machine_order'])}")
+        in_p = self.make_input(box, "Running Product", "Standard Batch")
+        in_b = self.make_input(box, "Batch No", "B26-1100")
+
+        b_ok = Button(text="Add Machine", size_hint_y=None, height=dp(44), background_normal="", background_color=T.ACCENT_COLOR, color=T.BG_COLOR, bold=True)
+        pop = Popup(title="", separator_height=0, content=box, size_hint=(0.92, None), height=dp(340), background="", background_color=T.CARD_COLOR)
+        def _add(*a):
+            nm = in_n.text.strip()
+            mid = in_i.text.strip().upper()
+            if nm and mid and mid not in self.db["machines"]:
+                sl = len(self.db["machine_order"]) + 1
+                self.db["machine_order"].append(mid)
+                self.db["machines"][mid] = {
+                    "sl": sl, "name": nm, "id": mid, "status": "RUNNING",
+                    "product": in_p.text.strip(), "batch": in_b.text.strip(),
+                    "pm_day": 20, "pm_done_oct": False,
+                    "std_time": "6.0 Hours", "act_time": "6.0 Hours",
+                    "delay_reason": "No delay", "operator": "Md. Tanvir", "officer": "Kamrul Hasan"
+                }
+                self.save_data()
+            pop.dismiss()
+            self.switch_tab("MACHINES", record_history=False)
+        b_ok.bind(on_release=_add)
+        box.add_widget(b_ok)
+        self.open_tracked_popup(pop)
 
 
 if __name__ == "__main__":
