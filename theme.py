@@ -45,7 +45,7 @@ RADIUS_INNER = dp(12)
 ICONS = {
     "home": "\ue88a",
     "machines": "\ue30a",
-    "capa": "\ue85d",
+    "history": "\ue889",
     "settings": "\ue8b8",
     "running": "\ue037",
     "idle": "\ue034",
