@@ -4,7 +4,8 @@ package.name = machinetracker
 package.domain = org.smatrix
 source.dir = .
 source.include_exts = py,png,jpg,kv,atlas,ttf,json
-version = 1.0
+version = 1.0.1
+android.numeric_version = 101
 requirements = hostpython3==3.11.9,python3==3.11.9,kivy==2.3.0,pyjnius,setuptools
 orientation = portrait
 fullscreen = 0
