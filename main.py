@@ -155,10 +155,11 @@ class NavItem(ButtonBehavior, BoxLayout):
         self.tx.color = T.ACCENT_COLOR if active else T.TEXT_MUTED
         self.tx.bold = active
 
+
 class MachineTrackerApp(App):
     def build(self):
         self.title = "S Matrix Smart Eng-Ops"
-        self.data_file = os.path.join(self.user_data_dir, "smatrix_breakdown_v8.json")
+        self.data_file = os.path.join(self.user_data_dir, "smatrix_breakdown_v9.json")
         self.load_data()
 
         self.current_tab = "HOME"
@@ -171,7 +172,6 @@ class MachineTrackerApp(App):
         self.expanded_machine_id = None
         self.selected_machine_id = self.db["machine_order"][0]
 
-        # Bind Android Hardware/Gesture Back Button
         Window.bind(on_keyboard=self.on_back_button)
 
         self.root_box = BoxLayout(orientation="vertical")
@@ -180,16 +180,7 @@ class MachineTrackerApp(App):
             self.bg_rect = Rectangle(pos=self.root_box.pos, size=self.root_box.size)
         self.root_box.bind(pos=lambda i, v: setattr(self.bg_rect, "pos", v), size=lambda i, v: setattr(self.bg_rect, "size", v))
 
-        # Subtle Toast Banner for "Press back again to exit"
-        self.toast_bar = ModernBox(
-            bg_color=T.CARD_INNER,
-            border_color=T.ACCENT_COLOR,
-            radius=dp(10),
-            auto_height=False,
-            height=0,
-            size_hint_y=None,
-            padding=[dp(12), 0]
-        )
+        self.toast_bar = ModernBox(bg_color=T.CARD_INNER, border_color=T.ACCENT_COLOR, radius=dp(10), auto_height=False, height=0, size_hint_y=None, padding=[dp(12), 0])
         self.toast_bar.opacity = 0.0
         self.toast_lbl = make_label("", T.FONT_CAPTION, T.ACCENT_COLOR, bold=True, halign="center", height_dp=28)
         self.toast_bar.add_widget(self.toast_lbl)
@@ -231,47 +222,39 @@ class MachineTrackerApp(App):
         Clock.schedule_once(lambda dt: Animation(height=0, opacity=0.0, duration=0.18).start(self.toast_bar), 2.0)
 
     def on_back_button(self, window, key, *args):
-        if key == 27:  # Android Back Button / ESC
-            # 1. If a popup is open, close the popup first
+        if key == 27:
             if self.active_popup is not None:
                 self.active_popup.dismiss()
                 self.active_popup = None
                 return True
-
-            # 2. If inside an expanded machine card on Machines list, collapse it first
             if self.current_tab == "MACHINES" and self.expanded_machine_id is not None:
                 self.expanded_machine_id = None
                 self.switch_tab("MACHINES", record_history=False)
                 return True
-
-            # 3. Step-by-step back through tab_history
             if self.tab_history:
                 prev_tab = self.tab_history.pop()
                 self.switch_tab(prev_tab, record_history=False)
                 return True
-
-            # 4. If on any non-HOME tab with empty history, go to HOME
             if self.current_tab != "HOME":
                 self.switch_tab("HOME", record_history=False)
                 return True
-
-            # 5. Already on HOME: require double press within 2 seconds to exit
             now = time.time()
             if now - self.last_back_press < 2.0:
-                return False  # Allow exit on second press
+                return False
             self.last_back_press = now
             self.show_toast("Press back again to exit app")
             return True
         return False
 
     def load_data(self):
-        if os.path.exists(self.data_file):
-            try:
+        try:
+            if os.path.exists(self.data_file):
                 with open(self.data_file, "r") as f:
                     self.db = json.load(f)
-                return
-            except Exception:
-                pass
+                if "machine_order" in self.db and "machines" in self.db:
+                    return
+        except Exception:
+            pass
 
         self.db = {
             "settings": {"user_name": "Ahmeed Sunny", "role": "Sr. Automation Engr", "shift": "Shift A", "plant": "Sterile Unit"},
@@ -714,7 +697,6 @@ class MachineTrackerApp(App):
         in_rca = self.make_input(box, "Root Cause (মূল কারণ)", "")
         in_cor = self.make_input(box, "Corrective Action (সমাধান)", "")
 
-        # Dynamic Parts Dropdown (Yes -> Opens Box)
         parts_box = BoxLayout(orientation="vertical", size_hint_y=None, height=dp(58), spacing=dp(3))
         parts_box.add_widget(make_label("Any Parts Change? (Yes/No)", T.FONT_CAPTION, T.TEXT_MUTED, height_dp=16))
         sp_parts = Spinner(text="No", values=["No", "Yes"], size_hint_y=None, height=dp(38), background_normal="", background_color=T.CARD_INNER, color=T.TEXT_PRIMARY, bold=True)
@@ -739,7 +721,6 @@ class MachineTrackerApp(App):
                 Animation(height=0, opacity=0.0, duration=0.18).start(parts_entry_box)
         sp_parts.bind(text=_toggle_parts)
 
-        # Dynamic Parameter Dropdown (Yes/No -> Opens Entry Box)
         param_box = BoxLayout(orientation="vertical", size_hint_y=None, height=dp(58), spacing=dp(3))
         param_box.add_widget(make_label("Parameter Change? (Yes/No)", T.FONT_CAPTION, T.TEXT_MUTED, height_dp=16))
         sp_param = Spinner(text="Select Option", values=["Yes", "No"], size_hint_y=None, height=dp(38), background_normal="", background_color=T.CARD_INNER, color=T.TEXT_PRIMARY, bold=True)
@@ -798,7 +779,7 @@ class MachineTrackerApp(App):
             })
             self.save_data()
             pop.dismiss()
-            self.switch_tab("BREAKDOWN")
+            self.switch_tab("BREAKDOWN", record_history=False)
 
         b_ok.bind(on_release=_sv_bd)
         self.open_tracked_popup(pop)
@@ -877,35 +858,6 @@ class MachineTrackerApp(App):
         b_ok = Button(text="Post Handover", size_hint_y=None, height=dp(44), background_normal="", background_color=T.ACCENT_COLOR, color=T.BG_COLOR, bold=True)
         pop = Popup(title="", separator_height=0, content=box, size_hint=(0.9, None), height=dp(170), background="", background_color=T.CARD_COLOR)
         b_ok.bind(on_release=pop.dismiss)
-        box.add_widget(b_ok)
-        self.open_tracked_popup(pop)
-
-    def open_add_machine_modal(self):
-        box = BoxLayout(orientation="vertical", padding=dp(14), spacing=dp(8))
-        in_n = self.make_input(box, "Machine Name", "")
-        in_i = self.make_input(box, "Machine ID", f"K02PR-{150 + len(self.db['machine_order'])}")
-        in_p = self.make_input(box, "Running Product", "Standard Batch")
-        in_b = self.make_input(box, "Batch No", "B26-1100")
-
-        b_ok = Button(text="Add Machine", size_hint_y=None, height=dp(44), background_normal="", background_color=T.ACCENT_COLOR, color=T.BG_COLOR, bold=True)
-        pop = Popup(title="", separator_height=0, content=box, size_hint=(0.92, None), height=dp(340), background="", background_color=T.CARD_COLOR)
-        def _add(*a):
-            nm = in_n.text.strip()
-            mid = in_i.text.strip().upper()
-            if nm and mid and mid not in self.db["machines"]:
-                sl = len(self.db["machine_order"]) + 1
-                self.db["machine_order"].append(mid)
-                self.db["machines"][mid] = {
-                    "sl": sl, "name": nm, "id": mid, "status": "RUNNING",
-                    "product": in_p.text.strip(), "batch": in_b.text.strip(),
-                    "pm_day": 20, "pm_done_oct": False,
-                    "std_time": "6.0 Hours", "act_time": "6.0 Hours",
-                    "delay_reason": "No delay", "operator": "Md. Tanvir", "officer": "Kamrul Hasan"
-                }
-                self.save_data()
-            pop.dismiss()
-            self.switch_tab("MACHINES", record_history=False)
-        b_ok.bind(on_release=_add)
         box.add_widget(b_ok)
         self.open_tracked_popup(pop)
 
