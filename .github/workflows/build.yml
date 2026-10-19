@@ -58,6 +58,9 @@ jobs:
           pip install "pip<24.0" "setuptools<69.0.0" "wheel<0.43.0"
           pip install "cython==0.29.36" "buildozer==1.5.0"
 
+      - name: Force clean dist so new icon is used
+        run: rm -rf .buildozer/android/platform/build-*/dists .buildozer/android/app
+
       - name: Build APK & Force Sign with Permanent Keystore
         run: |
           yes | buildozer android debug
@@ -72,6 +75,12 @@ jobs:
               "$apk"
             apksigner verify -v "$apk"
           done
+
+      - name: Show icon inside APK
+        run: |
+          mkdir -p chk && cd chk
+          unzip -o ../bin/*.apk res/mipmap/icon.png
+          ls -l res/mipmap/icon.png ../assets/icon.png
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
