@@ -22,9 +22,6 @@ from kivy.graphics import Color, RoundedRectangle, Rectangle, Line, Ellipse
 from kivy.metrics import dp, sp
 from kivy.utils import get_color_from_hex
 
-# ==========================================
-# 1. THEME & COLORS
-# ==========================================
 BG_COLOR = get_color_from_hex("#070B12")
 CARD_COLOR = get_color_from_hex("#111827")
 CARD_INNER = get_color_from_hex("#1B2436")
@@ -61,9 +58,6 @@ else:
     ICON_FONT = "Roboto"
     ICONS = {"home": "H", "machines": "M", "breakdown": "B", "settings": "S", "running": "R", "idle": "I", "breakdown_icon": "!", "maintenance": "M", "check": "OK", "calendar": "C", "report": "R", "inventory": "S", "handover": "N"}
 
-# ==========================================
-# 2. UI WIDGETS
-# ==========================================
 class ModernBox(BoxLayout):
     def __init__(self, bg_color=CARD_COLOR, border_color=BORDER_COLOR, radius=RADIUS_BOX, left_accent=None, auto_height=True, **kwargs):
         super().__init__(**kwargs)
@@ -102,22 +96,6 @@ def make_label(text, font_size=sp(12), color=TEXT_PRIMARY, bold=False, halign="l
     lbl.bind(size=lbl.setter("text_size"))
     return lbl
 
-def make_status_pill(text_str, status_key):
-    col, tint = STATUS_MAP.get(status_key, ACCENT_COLOR), STATUS_TINT_MAP.get(status_key, ACCENT_TINT)
-    pill = BoxLayout(size_hint=(None, None), size=(dp(92), dp(24)), padding=[dp(8), 0], spacing=dp(5))
-    with pill.canvas.before:
-        Color(*tint)
-        r = RoundedRectangle(pos=pill.pos, size=pill.size, radius=[dp(12)])
-    pill.bind(pos=lambda i, v: setattr(r, "pos", v), size=lambda i, v: setattr(r, "size", v))
-    dot = Widget(size_hint=(None, None), size=(dp(6), dp(6)), pos_hint={"center_y": 0.5})
-    with dot.canvas:
-        Color(*col)
-        el = Ellipse(pos=dot.pos, size=dot.size)
-    dot.bind(pos=lambda i, v: setattr(el, "pos", v), size=lambda i, v: setattr(el, "size", v))
-    pill.add_widget(dot)
-    pill.add_widget(Label(text=text_str, font_size=FONT_CAPTION, bold=True, color=col, halign="center", valign="middle"))
-    return pill
-
 class NavItem(ButtonBehavior, BoxLayout):
     def __init__(self, icon_char, title_str, on_tap, **kwargs):
         super().__init__(orientation="vertical", size_hint_x=1, padding=[0, dp(4)], spacing=dp(2), **kwargs)
@@ -141,9 +119,6 @@ class NavItem(ButtonBehavior, BoxLayout):
         self.ic.color = ACCENT_COLOR if active else TEXT_MUTED
         self.tx.color = ACCENT_COLOR if active else TEXT_MUTED
 
-# ==========================================
-# 3. MAIN APPLICATION APP CLASS
-# ==========================================
 class MachineTrackerApp(App):
     def build(self):
         self.title = "Renata PLC Smart Eng-Ops"
@@ -175,7 +150,9 @@ class MachineTrackerApp(App):
         self.root_box.add_widget(self.toast_bar)
 
         self.scroll = ScrollView(do_scroll_x=False, bar_width=dp(2))
-        self.feed = BoxLayout(orientation="vertical", size_hint_x=1, size_hint_y=None, padding=[dp(14), dp(14), dp(14), dp(28)], spacing=dp(14))
+        
+        # PADDING UPDATED HERE: dp(50) for TOP padding to fix layout overlap with Notch
+        self.feed = BoxLayout(orientation="vertical", size_hint_x=1, size_hint_y=None, padding=[dp(14), dp(50), dp(14), dp(28)], spacing=dp(14))
         self.feed.bind(minimum_height=self.feed.setter("height"))
         self.scroll.add_widget(self.feed)
         self.root_box.add_widget(self.scroll)
@@ -199,6 +176,22 @@ class MachineTrackerApp(App):
 
         self.switch_tab("HOME", record_history=False)
         return self.root_box
+
+    def make_status_pill(self, text_str, status_key):
+        col, tint = STATUS_MAP.get(status_key, ACCENT_COLOR), STATUS_TINT_MAP.get(status_key, ACCENT_TINT)
+        pill = BoxLayout(size_hint=(None, None), size=(dp(92), dp(24)), padding=[dp(8), 0], spacing=dp(5))
+        with pill.canvas.before:
+            Color(*tint)
+            r = RoundedRectangle(pos=pill.pos, size=pill.size, radius=[dp(12)])
+        pill.bind(pos=lambda i, v: setattr(r, "pos", v), size=lambda i, v: setattr(r, "size", v))
+        dot = Widget(size_hint=(None, None), size=(dp(6), dp(6)), pos_hint={"center_y": 0.5})
+        with dot.canvas:
+            Color(*col)
+            el = Ellipse(pos=dot.pos, size=dot.size)
+        dot.bind(pos=lambda i, v: setattr(el, "pos", v), size=lambda i, v: setattr(el, "size", v))
+        pill.add_widget(dot)
+        pill.add_widget(Label(text=text_str, font_size=sp(10), bold=True, color=col, halign="center", valign="middle"))
+        return pill
 
     def load_data(self):
         try:
@@ -335,17 +328,17 @@ class MachineTrackerApp(App):
         uptime_pct = int(round((c_run / total_m) * 100))
 
         # --- 1. NEW GREETING CARD ---
-        greet_box = ModernBox(orientation="vertical", auto_height=False, height=dp(125), padding=[dp(16), dp(12)], spacing=dp(3), left_accent=ACCENT_COLOR)
+        greet_box = ModernBox(orientation="vertical", auto_height=False, height=dp(135), padding=[dp(16), dp(12)], spacing=dp(2), left_accent=ACCENT_COLOR)
         
         hr = today_obj.hour
-        g_time = "Good morning" if hr < 12 else ("Good afternoon" if hr < 17 else "Good evening")
-        
+        g_time = "Good morning!" if hr < 12 else ("Good afternoon!" if hr < 17 else "Good evening!")
+
         top_row = BoxLayout(size_hint_y=None, height=dp(20))
-        top_row.add_widget(make_label(f"{g_time}!", sp(12), ACCENT_COLOR, bold=True, height_dp=20))
-        top_row.add_widget(make_label(f"Date: {today_obj.strftime('%d %b %Y')}", sp(12), ACCENT_COLOR, bold=True, halign="right", height_dp=20))
+        top_row.add_widget(make_label(g_time, sp(12), ACCENT_COLOR, bold=True, height_dp=20))
+        top_row.add_widget(make_label(f"Date: {today_obj.strftime('%d %b %Y')}", sp(13), ACCENT_COLOR, bold=True, halign="right", height_dp=20))
         greet_box.add_widget(top_row)
         
-        greet_box.add_widget(make_label(cfg["user_name"], sp(20), TEXT_PRIMARY, bold=True, height_dp=26))
+        greet_box.add_widget(make_label(cfg["user_name"], sp(19), TEXT_PRIMARY, bold=True, height_dp=26))
         greet_box.add_widget(make_label(cfg["role"], sp(11), TEXT_MUTED, height_dp=16))
         greet_box.add_widget(make_label(cfg["shift"], sp(11), TEXT_MUTED, height_dp=16))
         greet_box.add_widget(make_label(cfg["plant"], sp(11), TEXT_MUTED, height_dp=16))
@@ -373,7 +366,7 @@ class MachineTrackerApp(App):
         sum_box.add_widget(grid_sum)
         self.feed.add_widget(sum_box)
 
-        # --- 3. FOCUS CARD (Due PM Month, Pending BD) ---
+        # --- 3. FOCUS CARD (Today's PM Due, Full Month Due, Breakdown) ---
         focus_box = ModernBox(bg_color=CARD_INNER, border_color=BORDER_COLOR, radius=dp(12), auto_height=False, height=dp(64), orientation="horizontal", padding=[dp(8), dp(8)])
         f_items = [
             (str(pm_today), "Today's PM Due", STATUS_MAINTENANCE if pm_today > 0 else TEXT_PRIMARY, "PM_TODAY"),
@@ -394,7 +387,7 @@ class MachineTrackerApp(App):
                 focus_box.add_widget(div)
         self.feed.add_widget(focus_box)
 
-        # --- 4. FULL CALENDAR (Highlighted PM Dates) ---
+        # --- 4. FULL CALENDAR ---
         cal_box = ModernBox(orientation="vertical", padding=dp(14), spacing=dp(10))
         cal_box.add_widget(make_label("OCTOBER 2026 PM SCHEDULE CALENDAR", sp(11), TEXT_MUTED, bold=True, height_dp=18))
         
@@ -416,8 +409,10 @@ class MachineTrackerApp(App):
         for d_num in range(1, 32):
             has_pm = d_num in pm_days_map
             is_today = d_num == today_date
+            
             bg_c = ACCENT_COLOR if is_today else (CARD_INNER if not has_pm else (0.133, 0.4, 0.5, 1))
             fg_c = BG_COLOR if is_today else (ACCENT_COLOR if has_pm else TEXT_PRIMARY)
+            
             d_btn = AnimatedCard(on_tap_cb=lambda dn=d_num, hpm=has_pm: self.open_pm_day_details(dn, hpm, pm_days_map), bg_color=bg_c, border_color=BORDER_COLOR, radius=dp(8), auto_height=False, height=dp(36))
             d_btn.add_widget(make_label(str(d_num), sp(12), fg_c, bold=True, halign="center", height_dp=36))
             cal_grid.add_widget(d_btn)
@@ -476,7 +471,7 @@ class MachineTrackerApp(App):
         pop = Popup(title="", separator_height=0, content=box, size_hint=(0.9, 0.6), background="", background_color=CARD_COLOR)
 
         if not matched:
-            m_box.add_widget(make_label("No records found.", sp(12), TEXT_MUTED, height_dp=30))
+            m_box.add_widget(make_label("No machines found.", sp(12), TEXT_MUTED, height_dp=30))
         else:
             if status_val == "BREAKDOWN":
                 for b in matched:
@@ -493,7 +488,7 @@ class MachineTrackerApp(App):
                         btn_done.bind(on_release=lambda x, mid=mat["id"], p=pop: (self.mark_pm_complete(mid), p.dismiss()))
                         c.add_widget(btn_done)
                     else:
-                        c.add_widget(make_status_pill(mat["status"], mat["status"]))
+                        c.add_widget(self.make_status_pill(mat["status"], mat["status"]))
                     m_box.add_widget(c)
                 
         scroll_m.add_widget(m_box)
@@ -594,7 +589,7 @@ class MachineTrackerApp(App):
             m = self.db["machines"][mid]
             c = ModernBox(bg_color=CARD_INNER, radius=dp(10), auto_height=False, height=dp(44), padding=[dp(12), 0], orientation="horizontal", left_accent=STATUS_MAP.get(m["status"], ACCENT_COLOR))
             c.add_widget(make_label(f"{m['name']} ({mid})", sp(12), TEXT_PRIMARY, bold=True, height_dp=44))
-            c.add_widget(make_status_pill(m["status"], m["status"]))
+            c.add_widget(self.make_status_pill(m["status"], m["status"]))
             self.feed.add_widget(c)
 
     def build_breakdown_history(self):
@@ -602,16 +597,22 @@ class MachineTrackerApp(App):
         b_back = Button(text="<- Home", size_hint=(None, None), size=(dp(72), dp(34)), font_size=sp(10), bold=True, background_normal="", background_color=CARD_COLOR, color=ACCENT_COLOR)
         b_back.bind(on_release=lambda x: self.go_back_step())
         hdr.add_widget(b_back)
-        hdr.add_widget(make_label("BREAKDOWN HISTORY", sp(11), TEXT_MUTED, bold=True, height_dp=36))
+        hdr.add_widget(make_label("BREAKDOWN LIST & DETAILS", sp(11), TEXT_MUTED, bold=True, height_dp=36))
         self.feed.add_widget(hdr)
-        for b in self.db["breakdown_history"]:
-            card = AnimatedCard(
-                on_tap_cb=lambda bd=b: self.open_breakdown_detail_popup(bd),
-                bg_color=CARD_INNER, border_color=BORDER_COLOR, radius=dp(10), auto_height=False, height=dp(58), orientation="vertical", padding=[dp(12), dp(6)], spacing=dp(2), left_accent=STATUS_BREAKDOWN
-            )
-            card.add_widget(make_label(f"{b['machine_name']} ({b['machine_id']})", sp(12), TEXT_PRIMARY, bold=True, height_dp=20))
-            card.add_widget(make_label(f"Issue: {b['issue']} · Tap for details", sp(10), STATUS_BREAKDOWN, height_dp=18))
-            self.feed.add_widget(card)
+        
+        if not self.db["breakdown_history"]:
+            self.feed.add_widget(make_label("No breakdowns logged.", sp(12), TEXT_MUTED, height_dp=30))
+        else:
+            for b in self.db["breakdown_history"]:
+                card = AnimatedCard(
+                    on_tap_cb=lambda bd=b: self.open_breakdown_detail_popup(bd),
+                    bg_color=CARD_INNER, border_color=BORDER_COLOR, radius=dp(10),
+                    auto_height=False, height=dp(58), orientation="vertical",
+                    padding=[dp(12), dp(6)], spacing=dp(2), left_accent=STATUS_BREAKDOWN
+                )
+                card.add_widget(make_label(f"{b['machine_name']} ({b['machine_id']})", sp(12), TEXT_PRIMARY, bold=True, height_dp=20))
+                card.add_widget(make_label(f"Issue: {b['issue']} · Tap for details", sp(10), STATUS_BREAKDOWN, height_dp=18))
+                self.feed.add_widget(card)
 
     def build_settings(self):
         hdr = BoxLayout(size_hint_y=None, height=dp(38), spacing=dp(8))
@@ -621,6 +622,7 @@ class MachineTrackerApp(App):
         hdr.add_widget(make_label("SETTINGS", sp(11), TEXT_MUTED, bold=True, height_dp=36))
         self.feed.add_widget(hdr)
         self.feed.add_widget(make_label("Settings configuration active.", sp(12), TEXT_PRIMARY, height_dp=30))
+
 
 if __name__ == "__main__":
     try:
