@@ -39,6 +39,7 @@ jobs:
           NUM_VER="$((200 + ${{ github.run_number }}))"
           sed -i "s/^version = .*/version = $NEW_VER/" buildozer.spec
           sed -i "s/^android.numeric_version = .*/android.numeric_version = $NUM_VER/" buildozer.spec
+          echo "NUM_VER=$NUM_VER" >> $GITHUB_ENV
 
           mkdir -p ~/.android
           cp -f my_fixed_debug.keystore ~/.android/debug.keystore
@@ -83,7 +84,7 @@ jobs:
         with:
           tag_name: v1.0.${{ github.run_number }}
           name: "Smart Eng Logbook v1.0.${{ github.run_number }}"
-          body: "Permanently Signed APK (Version Code: $((200 + ${{ github.run_number }}))). Direct update supported without uninstalling."
+          body: "Permanently Signed APK (Version Code: ${{ env.NUM_VER }}). Direct update supported without uninstalling."
           files: bin/*.apk
           draft: false
           prerelease: false

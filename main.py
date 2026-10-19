@@ -2,6 +2,7 @@ import traceback
 import os
 import json
 import time
+import calendar
 from datetime import datetime
 from kivy.app import App
 from kivy.core.text import LabelBase
@@ -96,6 +97,23 @@ def make_label(text, font_size=sp(12), color=TEXT_PRIMARY, bold=False, halign="l
     lbl.bind(size=lbl.setter("text_size"))
     return lbl
 
+def make_status_pill(text, status):
+    col = STATUS_MAP.get(status, ACCENT_COLOR)
+    tint = STATUS_TINT_MAP.get(status, ACCENT_TINT)
+    pill = Label(text=str(text), font_size=sp(9), bold=True, color=col, size_hint=(None, None), size=(dp(88), dp(22)), pos_hint={"center_y": 0.5})
+    with pill.canvas.before:
+        Color(*tint)
+        rect = RoundedRectangle(pos=pill.pos, size=pill.size, radius=[dp(11)])
+    pill.bind(pos=lambda i, v, r=rect: setattr(r, "pos", v), size=lambda i, v, r=rect: setattr(r, "size", v))
+    return pill
+
+def month_key(dt=None):
+    dt = dt or datetime.now()
+    return dt.strftime("%Y-%m")
+
+def pm_is_done(m):
+    return m.get("pm_done_month") == month_key()
+
 class NavItem(ButtonBehavior, BoxLayout):
     def __init__(self, icon_char, title_str, on_tap, **kwargs):
         super().__init__(orientation="vertical", size_hint_x=1, padding=[0, dp(4)], spacing=dp(2), **kwargs)
@@ -130,10 +148,6 @@ class MachineTrackerApp(App):
         self.active_popup = None
         self.last_back_press = 0.0
 
-        self.selected_cal_day = 19
-        self.machine_filter = "ALL"
-        self.expanded_machine_id = None
-        self.selected_machine_id = self.db["machine_order"][0]
 
         Window.bind(on_keyboard=self.on_back_button)
 
@@ -180,7 +194,12 @@ class MachineTrackerApp(App):
             if os.path.exists(self.data_file):
                 with open(self.data_file, "r") as f:
                     self.db = json.load(f)
-                if "machine_order" in self.db: return
+                if "machine_order" in self.db:
+                    for m in self.db["machines"].values():
+                        if m.pop("pm_done_oct", False):
+                            m["pm_done_month"] = "2026-10"
+                    self.db.setdefault("breakdown_history", [])
+                    return
         except Exception: pass
 
         self.db = {
@@ -214,7 +233,7 @@ class MachineTrackerApp(App):
             st = "BREAKDOWN" if idx == 5 else ("MAINTENANCE" if idx == 12 else ("IDLE" if idx in (6, 14) else "RUNNING"))
             self.db["machines"][mid] = {
                 "sl": idx + 1, "name": nm, "id": mid, "status": st,
-                "product": "Standard Batch", "batch": "B26-1041", "pm_day": 19 if idx % 2 == 0 else 23, "pm_done_oct": False,
+                "product": "Standard Batch", "batch": "B26-1041", "pm_day": 19 if idx % 2 == 0 else 23, "pm_done_month": "",
                 "std_time": "6.0 Hours", "act_time": "7.5 Hours", "delay_reason": "No delay",
                 "operator": "Md. Tanvir", "officer": "Kamrul Hasan"
             }
@@ -289,8 +308,9 @@ class MachineTrackerApp(App):
         c_bd = sum(1 for m in m_list if m["status"] == "BREAKDOWN")
         c_off = sum(1 for m in m_list if m["status"] in ("IDLE", "BREAKDOWN", "MAINTENANCE"))
         
-        pm_today = sum(1 for m in m_list if m.get("pm_day") == today_date and not m.get("pm_done_oct", False))
-        pm_due_month = sum(1 for m in m_list if m.get("pm_day", 0) > today_date and not m.get("pm_done_oct", False))
+        pm_today = sum(1 for m in m_list if m.get("pm_day") == today_date and not pm_is_done(m))
+        pm_overdue = sum(1 for m in m_list if 0 < m.get("pm_day", 0) < today_date and not pm_is_done(m))
+        pm_upcoming = sum(1 for m in m_list if m.get("pm_day", 0) > today_date and not pm_is_done(m))
         
         total_m = max(1, len(m_list))
         uptime_pct = int(round((c_run / total_m) * 100))
@@ -339,8 +359,9 @@ class MachineTrackerApp(App):
 
         focus_box = ModernBox(bg_color=CARD_INNER, border_color=BORDER_COLOR, radius=dp(12), auto_height=False, height=dp(64), orientation="horizontal", padding=[dp(8), dp(8)])
         f_items = [
-            (str(pm_today), "Today's PM Due", STATUS_MAINTENANCE if pm_today > 0 else TEXT_PRIMARY),
-            (str(pm_due_month), "Full Month Due", STATUS_MAINTENANCE if pm_due_month > 0 else TEXT_PRIMARY),
+            (str(pm_today), "PM Today", STATUS_MAINTENANCE if pm_today > 0 else TEXT_PRIMARY),
+            (str(pm_overdue), "Overdue", STATUS_BREAKDOWN if pm_overdue > 0 else TEXT_PRIMARY),
+            (str(pm_upcoming), "Upcoming", STATUS_MAINTENANCE if pm_upcoming > 0 else TEXT_PRIMARY),
             (str(c_bd), "Breakdown", STATUS_BREAKDOWN if c_bd > 0 else TEXT_PRIMARY),
         ]
         for idx, (val_s, lbl_s, col_v) in enumerate(f_items):
@@ -348,7 +369,7 @@ class MachineTrackerApp(App):
             cell.add_widget(make_label(val_s, sp(18), col_v, bold=True, halign="center", height_dp=24))
             cell.add_widget(make_label(lbl_s, sp(10), TEXT_MUTED, halign="center", height_dp=16))
             focus_box.add_widget(cell)
-            if idx < 2:
+            if idx < len(f_items) - 1:
                 div = Widget(size_hint_x=None, width=dp(1))
                 with div.canvas:
                     Color(*BORDER_COLOR)
@@ -358,7 +379,7 @@ class MachineTrackerApp(App):
         self.feed.add_widget(focus_box)
 
         cal_box = ModernBox(orientation="vertical", padding=dp(14), spacing=dp(10))
-        cal_box.add_widget(make_label("OCTOBER 2026 PM SCHEDULE CALENDAR", sp(11), TEXT_MUTED, bold=True, height_dp=18))
+        cal_box.add_widget(make_label(f"{today_obj.strftime('%B %Y').upper()} PM SCHEDULE CALENDAR", sp(11), TEXT_MUTED, bold=True, height_dp=18))
         
         days_header = GridLayout(cols=7, size_hint_y=None, height=dp(20))
         for d in ["Sat", "Sun", "Mon", "Tue", "Wed", "Thu", "Fri"]:
@@ -367,14 +388,15 @@ class MachineTrackerApp(App):
 
         cal_grid = GridLayout(cols=7, size_hint_y=None, spacing=dp(4))
         cal_grid.bind(minimum_height=cal_grid.setter("height"))
-        for _ in range(5): cal_grid.add_widget(Widget(size_hint_y=None, height=dp(36)))
+        first_wd, days_in_month = calendar.monthrange(today_obj.year, today_obj.month)
+        for _ in range((first_wd + 2) % 7): cal_grid.add_widget(Widget(size_hint_y=None, height=dp(36)))
 
         pm_days_map = {}
         for m in m_list:
             pd = m.get("pm_day")
-            if pd: pm_days_map.setdefault(pd, []).append(m)
+            if pd and pd <= days_in_month: pm_days_map.setdefault(pd, []).append(m)
 
-        for d_num in range(1, 32):
+        for d_num in range(1, days_in_month + 1):
             has_pm = d_num in pm_days_map
             is_today = d_num == today_date
             bg_c = ACCENT_COLOR if is_today else (CARD_INNER if not has_pm else (0.133, 0.4, 0.5, 1))
@@ -405,7 +427,7 @@ class MachineTrackerApp(App):
         m_list = list(self.db["machines"].values())
         if status_val == "PM_TODAY":
             today_date = datetime.now().day
-            matched = [m for m in m_list if m.get("pm_day") == today_date and not m.get("pm_done_oct", False)]
+            matched = [m for m in m_list if m.get("pm_day") == today_date and not pm_is_done(m)]
         elif status_val == "OFF_MACHINES":
             matched = [m for m in m_list if m["status"] in ("IDLE", "BREAKDOWN", "MAINTENANCE")]
         else:
@@ -439,7 +461,7 @@ class MachineTrackerApp(App):
 
     def open_pm_day_details(self, day_num, has_pm, pm_map):
         box = BoxLayout(orientation="vertical", padding=dp(14), spacing=dp(10))
-        box.add_widget(make_label(f"PM Schedule for Oct {day_num}, 2026", sp(14), ACCENT_COLOR, bold=True, height_dp=24))
+        box.add_widget(make_label(f"PM Schedule for {day_num} {datetime.now().strftime('%b %Y')}", sp(14), ACCENT_COLOR, bold=True, height_dp=24))
         
         scroll_m = ScrollView(size_hint=(1, 1))
         m_box = BoxLayout(orientation="vertical", size_hint_y=None, spacing=dp(6))
@@ -447,7 +469,7 @@ class MachineTrackerApp(App):
 
         if has_pm:
             for mach in pm_map[day_num]:
-                is_done = mach.get("pm_done_oct", False)
+                is_done = pm_is_done(mach)
                 row = ModernBox(bg_color=CARD_INNER, radius=dp(8), auto_height=False, height=dp(48), padding=[dp(10), 0], orientation="horizontal")
                 info = BoxLayout(orientation="vertical", size_hint_x=1, spacing=dp(2))
                 info.add_widget(make_label(f"{mach['name']} ({mach['id']})", sp(12), TEXT_PRIMARY, bold=True, height_dp=22))
@@ -456,7 +478,7 @@ class MachineTrackerApp(App):
                 
                 if not is_done:
                     btn_comp = Button(text="Complete", size_hint=(None, None), size=(dp(85), dp(32)), font_size=sp(10), bold=True, background_normal="", background_color=STATUS_RUNNING, color=BG_COLOR)
-                    btn_comp.bind(on_release=lambda x, mid=mach["id"], p=pop: (self.mark_pm_complete(mid), p.dismiss()))
+                    btn_comp.bind(on_release=lambda x, mid=mach["id"]: self.complete_pm_and_close(mid))
                     row.add_widget(btn_comp)
                 m_box.add_widget(row)
         else:
@@ -472,8 +494,13 @@ class MachineTrackerApp(App):
         b_close.bind(on_release=pop.dismiss)
         self.open_tracked_popup(pop)
 
+    def complete_pm_and_close(self, m_id):
+        if self.active_popup is not None:
+            self.active_popup.dismiss()
+        self.mark_pm_complete(m_id)
+
     def mark_pm_complete(self, m_id):
-        self.db["machines"][m_id]["pm_done_oct"] = True
+        self.db["machines"][m_id]["pm_done_month"] = month_key()
         self.save_data()
         self.show_toast(f"PM completed for {m_id}!")
         self.switch_tab("HOME", record_history=False)
@@ -562,7 +589,6 @@ class MachineTrackerApp(App):
         box.add_widget(scroll_m)
 
         b_close = Button(text="Close", size_hint_y=None, height=dp(42), background_normal="", background_color=CARD_INNER, color=TEXT_PRIMARY, bold=True)
-        b_close.bind(on_release=pop.dismiss if 'pop' in locals() else None)
         pop = Popup(title="", separator_height=0, content=box, size_hint=(0.92, 0.75), background="", background_color=CARD_COLOR)
         b_close.bind(on_release=pop.dismiss)
         self.open_tracked_popup(pop)
