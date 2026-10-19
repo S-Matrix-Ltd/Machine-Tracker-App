@@ -31,7 +31,7 @@ jobs:
           path: |
             ~/.buildozer/android/platform
             .buildozer/android/platform
-          key: buildozer-sdk-v3-${{ runner.os }}
+          key: buildozer-sdk-v4-${{ runner.os }}
 
       - name: Auto Increment Version & Set Permanent Keystore
         run: |
