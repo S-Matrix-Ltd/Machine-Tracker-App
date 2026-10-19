@@ -2,7 +2,6 @@ import traceback
 import os
 import json
 import time
-import calendar
 from datetime import datetime
 from kivy.app import App
 from kivy.core.text import LabelBase
@@ -23,6 +22,9 @@ from kivy.graphics import Color, RoundedRectangle, Rectangle, Line, Ellipse
 from kivy.metrics import dp, sp
 from kivy.utils import get_color_from_hex
 
+# ==========================================
+# 1. THEME & COLORS
+# ==========================================
 BG_COLOR = get_color_from_hex("#070B12")
 CARD_COLOR = get_color_from_hex("#111827")
 CARD_INNER = get_color_from_hex("#1B2436")
@@ -59,6 +61,9 @@ else:
     ICON_FONT = "Roboto"
     ICONS = {"home": "H", "machines": "M", "breakdown": "B", "settings": "S", "running": "R", "idle": "I", "breakdown_icon": "!", "maintenance": "M", "check": "OK", "calendar": "C", "report": "R", "inventory": "S", "handover": "N"}
 
+# ==========================================
+# 2. UI WIDGETS
+# ==========================================
 class ModernBox(BoxLayout):
     def __init__(self, bg_color=CARD_COLOR, border_color=BORDER_COLOR, radius=RADIUS_BOX, left_accent=None, auto_height=True, **kwargs):
         super().__init__(**kwargs)
@@ -97,22 +102,21 @@ def make_label(text, font_size=sp(12), color=TEXT_PRIMARY, bold=False, halign="l
     lbl.bind(size=lbl.setter("text_size"))
     return lbl
 
-def make_status_pill(text, status):
-    col = STATUS_MAP.get(status, ACCENT_COLOR)
-    tint = STATUS_TINT_MAP.get(status, ACCENT_TINT)
-    pill = Label(text=str(text), font_size=sp(9), bold=True, color=col, size_hint=(None, None), size=(dp(88), dp(22)), pos_hint={"center_y": 0.5})
+def make_status_pill(text_str, status_key):
+    col, tint = STATUS_MAP.get(status_key, ACCENT_COLOR), STATUS_TINT_MAP.get(status_key, ACCENT_TINT)
+    pill = BoxLayout(size_hint=(None, None), size=(dp(92), dp(24)), padding=[dp(8), 0], spacing=dp(5))
     with pill.canvas.before:
         Color(*tint)
-        rect = RoundedRectangle(pos=pill.pos, size=pill.size, radius=[dp(11)])
-    pill.bind(pos=lambda i, v, r=rect: setattr(r, "pos", v), size=lambda i, v, r=rect: setattr(r, "size", v))
+        r = RoundedRectangle(pos=pill.pos, size=pill.size, radius=[dp(12)])
+    pill.bind(pos=lambda i, v: setattr(r, "pos", v), size=lambda i, v: setattr(r, "size", v))
+    dot = Widget(size_hint=(None, None), size=(dp(6), dp(6)), pos_hint={"center_y": 0.5})
+    with dot.canvas:
+        Color(*col)
+        el = Ellipse(pos=dot.pos, size=dot.size)
+    dot.bind(pos=lambda i, v: setattr(el, "pos", v), size=lambda i, v: setattr(el, "size", v))
+    pill.add_widget(dot)
+    pill.add_widget(Label(text=text_str, font_size=FONT_CAPTION, bold=True, color=col, halign="center", valign="middle"))
     return pill
-
-def month_key(dt=None):
-    dt = dt or datetime.now()
-    return dt.strftime("%Y-%m")
-
-def pm_is_done(m):
-    return m.get("pm_done_month") == month_key()
 
 class NavItem(ButtonBehavior, BoxLayout):
     def __init__(self, icon_char, title_str, on_tap, **kwargs):
@@ -137,10 +141,13 @@ class NavItem(ButtonBehavior, BoxLayout):
         self.ic.color = ACCENT_COLOR if active else TEXT_MUTED
         self.tx.color = ACCENT_COLOR if active else TEXT_MUTED
 
+# ==========================================
+# 3. MAIN APPLICATION APP CLASS
+# ==========================================
 class MachineTrackerApp(App):
     def build(self):
         self.title = "Renata PLC Smart Eng-Ops"
-        self.data_file = os.path.join(self.user_data_dir, "renata_sagar_v22.json")
+        self.data_file = os.path.join(self.user_data_dir, "renata_sagar_v25.json")
         self.load_data()
 
         self.current_tab = "HOME"
@@ -148,6 +155,10 @@ class MachineTrackerApp(App):
         self.active_popup = None
         self.last_back_press = 0.0
 
+        self.selected_cal_day = datetime.now().day
+        self.machine_filter = "ALL"
+        self.expanded_machine_id = None
+        self.selected_machine_id = self.db["machine_order"][0]
 
         Window.bind(on_keyboard=self.on_back_button)
 
@@ -194,12 +205,7 @@ class MachineTrackerApp(App):
             if os.path.exists(self.data_file):
                 with open(self.data_file, "r") as f:
                     self.db = json.load(f)
-                if "machine_order" in self.db:
-                    for m in self.db["machines"].values():
-                        if m.pop("pm_done_oct", False):
-                            m["pm_done_month"] = "2026-10"
-                    self.db.setdefault("breakdown_history", [])
-                    return
+                if "machine_order" in self.db: return
         except Exception: pass
 
         self.db = {
@@ -221,19 +227,33 @@ class MachineTrackerApp(App):
                     {"day": "Fri", "avail": 90, "perf": 89, "qual": 97, "oee": 78}
                 ]
             },
-            "machine_order": [], "machines": {}, "breakdown_history": []
+            "machine_order": [], "machines": {},
+            "breakdown_history": [
+                {
+                    "id": "BD-101", "machine_id": "K02PR-106", "machine_name": "Ampoule Labeling 01",
+                    "date_time": "19 Oct 2026, 09:30 AM", "completed_time": "19 Oct 2026, 10:15 AM",
+                    "issue": "Label gap optical sensor false trigger at >320 RPM",
+                    "rca": "Adhesive residue on optical fiber head",
+                    "corrective": "Cleaned optical lens with IPA & recalibrated threshold",
+                    "parts_changed": "Yes", "parts_desc": "Optical Fiber Head x1",
+                    "param_changed": "Yes", "param_desc": "Sensitivity threshold 62% -> 75%",
+                    "work_desc": "Dismantled sensor bracket, solvent cleaned lens.",
+                    "responsible": "Sagar Ali & Md. Tanvir"
+                }
+            ]
         }
         
         initial_sls = ["Brevetti", "Korber", "Light Inspection 01", "Light Inspection 02", "PDLD", "Ampoule Labeling 01", "Conveyor Belt 04", "Blister & Cartooning", "Conveyor Belt 01", "Checkweigher 01", "Vail Labeling 02", "Conveyor Belt 03", "Washing and Drying", "Vail Labeling 01", "Conveyor Belt 02", "IFC Printer", "NKP 01", "NKP 02"]
         ids = ["095", "089", "137", "138", "134", "106", "133", "111", "130", "143", "108", "132", "135", "107", "131", "136", "128", "129"]
 
+        today_d = datetime.now().day
         for idx, nm in enumerate(initial_sls):
             mid = f"K02PR-{ids[idx]}"
             self.db["machine_order"].append(mid)
             st = "BREAKDOWN" if idx == 5 else ("MAINTENANCE" if idx == 12 else ("IDLE" if idx in (6, 14) else "RUNNING"))
             self.db["machines"][mid] = {
                 "sl": idx + 1, "name": nm, "id": mid, "status": st,
-                "product": "Standard Batch", "batch": "B26-1041", "pm_day": 19 if idx % 2 == 0 else 23, "pm_done_month": "",
+                "product": "Standard Batch", "batch": "B26-1041", "pm_day": today_d if idx in (0,7) else 23, "pm_done_oct": False,
                 "std_time": "6.0 Hours", "act_time": "7.5 Hours", "delay_reason": "No delay",
                 "operator": "Md. Tanvir", "officer": "Kamrul Hasan"
             }
@@ -308,35 +328,31 @@ class MachineTrackerApp(App):
         c_bd = sum(1 for m in m_list if m["status"] == "BREAKDOWN")
         c_off = sum(1 for m in m_list if m["status"] in ("IDLE", "BREAKDOWN", "MAINTENANCE"))
         
-        pm_today = sum(1 for m in m_list if m.get("pm_day") == today_date and not pm_is_done(m))
-        pm_overdue = sum(1 for m in m_list if 0 < m.get("pm_day", 0) < today_date and not pm_is_done(m))
-        pm_upcoming = sum(1 for m in m_list if m.get("pm_day", 0) > today_date and not pm_is_done(m))
+        pm_today = sum(1 for m in m_list if m.get("pm_day") == today_date and not m.get("pm_done_oct", False))
+        pm_due_month = sum(1 for m in m_list if m.get("pm_day", 0) > today_date and not m.get("pm_done_oct", False))
         
         total_m = max(1, len(m_list))
         uptime_pct = int(round((c_run / total_m) * 100))
 
-        greet_box = ModernBox(orientation="vertical", auto_height=False, height=dp(135), padding=[dp(16), dp(12)], spacing=dp(2), left_accent=ACCENT_COLOR)
+        # --- 1. NEW GREETING CARD ---
+        greet_box = ModernBox(orientation="vertical", auto_height=False, height=dp(125), padding=[dp(16), dp(12)], spacing=dp(3), left_accent=ACCENT_COLOR)
         
         hr = today_obj.hour
-        if hr < 4: g_time = "Good Night!"
-        elif hr < 12: g_time = "Good Morning!"
-        elif hr < 16: g_time = "Good Noon!"
-        elif hr < 18: g_time = "Good Afternoon!"
-        elif hr < 21: g_time = "Good Evening!"
-        else: g_time = "Good Night!"
-
+        g_time = "Good morning" if hr < 12 else ("Good afternoon" if hr < 17 else "Good evening")
+        
         top_row = BoxLayout(size_hint_y=None, height=dp(20))
-        top_row.add_widget(make_label(g_time, sp(12), ACCENT_COLOR, bold=True, height_dp=20))
-        top_row.add_widget(make_label(f"Date: {today_obj.strftime('%d %b %Y')}", sp(13), ACCENT_COLOR, bold=True, halign="right", height_dp=20))
+        top_row.add_widget(make_label(f"{g_time}!", sp(12), ACCENT_COLOR, bold=True, height_dp=20))
+        top_row.add_widget(make_label(f"Date: {today_obj.strftime('%d %b %Y')}", sp(12), ACCENT_COLOR, bold=True, halign="right", height_dp=20))
         greet_box.add_widget(top_row)
         
-        greet_box.add_widget(make_label(cfg["user_name"], sp(19), TEXT_PRIMARY, bold=True, height_dp=26))
+        greet_box.add_widget(make_label(cfg["user_name"], sp(20), TEXT_PRIMARY, bold=True, height_dp=26))
         greet_box.add_widget(make_label(cfg["role"], sp(11), TEXT_MUTED, height_dp=16))
         greet_box.add_widget(make_label(cfg["shift"], sp(11), TEXT_MUTED, height_dp=16))
         greet_box.add_widget(make_label(cfg["plant"], sp(11), TEXT_MUTED, height_dp=16))
         greet_box.add_widget(make_label(cfg["address"], sp(10), TEXT_MUTED, height_dp=15))
         self.feed.add_widget(greet_box)
 
+        # --- 2. SUMMARY CARD (Interactive Drill-Downs) ---
         sum_box = ModernBox(orientation="vertical", padding=dp(14), spacing=dp(10))
         sum_box.add_widget(make_label("TODAY'S LINE SUMMARY", sp(11), TEXT_MUTED, bold=True, height_dp=18))
         grid_sum = GridLayout(cols=2, size_hint_x=1, size_hint_y=None, height=dp(180), spacing=dp(8))
@@ -357,19 +373,19 @@ class MachineTrackerApp(App):
         sum_box.add_widget(grid_sum)
         self.feed.add_widget(sum_box)
 
+        # --- 3. FOCUS CARD (Due PM Month, Pending BD) ---
         focus_box = ModernBox(bg_color=CARD_INNER, border_color=BORDER_COLOR, radius=dp(12), auto_height=False, height=dp(64), orientation="horizontal", padding=[dp(8), dp(8)])
         f_items = [
-            (str(pm_today), "PM Today", STATUS_MAINTENANCE if pm_today > 0 else TEXT_PRIMARY),
-            (str(pm_overdue), "Overdue", STATUS_BREAKDOWN if pm_overdue > 0 else TEXT_PRIMARY),
-            (str(pm_upcoming), "Upcoming", STATUS_MAINTENANCE if pm_upcoming > 0 else TEXT_PRIMARY),
-            (str(c_bd), "Breakdown", STATUS_BREAKDOWN if c_bd > 0 else TEXT_PRIMARY),
+            (str(pm_today), "Today's PM Due", STATUS_MAINTENANCE if pm_today > 0 else TEXT_PRIMARY, "PM_TODAY"),
+            (str(pm_due_month), "Full Month Due", STATUS_MAINTENANCE if pm_due_month > 0 else TEXT_PRIMARY, "PM_MONTH"),
+            (str(c_bd), "Breakdown", STATUS_BREAKDOWN if c_bd > 0 else TEXT_PRIMARY, "BREAKDOWN"),
         ]
-        for idx, (val_s, lbl_s, col_v) in enumerate(f_items):
-            cell = BoxLayout(orientation="vertical", size_hint_x=1, spacing=dp(2))
+        for idx, (val_s, lbl_s, col_v, st_val) in enumerate(f_items):
+            cell = AnimatedCard(on_tap_cb=lambda sv=st_val, ts=lbl_s: self.open_summary_drilldown(sv, ts), bg_color=CARD_INNER, border_color=CARD_INNER, radius=dp(8), orientation="vertical", size_hint_x=1, spacing=dp(2))
             cell.add_widget(make_label(val_s, sp(18), col_v, bold=True, halign="center", height_dp=24))
             cell.add_widget(make_label(lbl_s, sp(10), TEXT_MUTED, halign="center", height_dp=16))
             focus_box.add_widget(cell)
-            if idx < len(f_items) - 1:
+            if idx < 2:
                 div = Widget(size_hint_x=None, width=dp(1))
                 with div.canvas:
                     Color(*BORDER_COLOR)
@@ -378,8 +394,9 @@ class MachineTrackerApp(App):
                 focus_box.add_widget(div)
         self.feed.add_widget(focus_box)
 
+        # --- 4. FULL CALENDAR (Highlighted PM Dates) ---
         cal_box = ModernBox(orientation="vertical", padding=dp(14), spacing=dp(10))
-        cal_box.add_widget(make_label(f"{today_obj.strftime('%B %Y').upper()} PM SCHEDULE CALENDAR", sp(11), TEXT_MUTED, bold=True, height_dp=18))
+        cal_box.add_widget(make_label("OCTOBER 2026 PM SCHEDULE CALENDAR", sp(11), TEXT_MUTED, bold=True, height_dp=18))
         
         days_header = GridLayout(cols=7, size_hint_y=None, height=dp(20))
         for d in ["Sat", "Sun", "Mon", "Tue", "Wed", "Thu", "Fri"]:
@@ -388,15 +405,15 @@ class MachineTrackerApp(App):
 
         cal_grid = GridLayout(cols=7, size_hint_y=None, spacing=dp(4))
         cal_grid.bind(minimum_height=cal_grid.setter("height"))
-        first_wd, days_in_month = calendar.monthrange(today_obj.year, today_obj.month)
-        for _ in range((first_wd + 2) % 7): cal_grid.add_widget(Widget(size_hint_y=None, height=dp(36)))
+        
+        for _ in range(5): cal_grid.add_widget(Widget(size_hint_y=None, height=dp(36)))
 
         pm_days_map = {}
         for m in m_list:
             pd = m.get("pm_day")
-            if pd and pd <= days_in_month: pm_days_map.setdefault(pd, []).append(m)
+            if pd: pm_days_map.setdefault(pd, []).append(m)
 
-        for d_num in range(1, days_in_month + 1):
+        for d_num in range(1, 32):
             has_pm = d_num in pm_days_map
             is_today = d_num == today_date
             bg_c = ACCENT_COLOR if is_today else (CARD_INNER if not has_pm else (0.133, 0.4, 0.5, 1))
@@ -407,29 +424,45 @@ class MachineTrackerApp(App):
         cal_box.add_widget(cal_grid)
         self.feed.add_widget(cal_box)
 
+        # --- 5. WEEKLY OEE & LINE UPTIME (Starts Saturday) ---
         oee_box = ModernBox(orientation="vertical", padding=dp(14), spacing=dp(10))
         oee_box.add_widget(make_label("WEEKLY OEE & LINE UPTIME (%) (Starts Saturday)", sp(11), TEXT_MUTED, bold=True, height_dp=18))
         
         oee_scroll = ScrollView(do_scroll_x=True, do_scroll_y=False, size_hint_y=None, height=dp(44), bar_width=0)
         oee_row = BoxLayout(orientation="horizontal", size_hint_x=None, width=dp(7 * 70), spacing=dp(8))
         
+        self.oee_detail_box = ModernBox(bg_color=CARD_INNER, radius=dp(10), orientation="vertical", padding=dp(0), spacing=dp(0))
+        self.oee_detail_box.opacity, self.oee_detail_box.height, self.oee_detail_box.size_hint_y = 0.0, 0, None
+        self.oee_d_title = make_label("", sp(12), ACCENT_COLOR, bold=True, halign="center", height_dp=0)
+        self.oee_d_stats = make_label("", sp(11), TEXT_PRIMARY, halign="center", height_dp=0)
+        self.oee_detail_box.add_widget(self.oee_d_title)
+        self.oee_detail_box.add_widget(self.oee_d_stats)
+
         for day_data in self.db["oee"]["days"]:
             p_card = AnimatedCard(on_tap_cb=lambda dt=day_data: self.animate_oee_detail(dt), bg_color=CARD_INNER, border_color=BORDER_COLOR, radius=dp(10), auto_height=False, height=dp(44), orientation="vertical", padding=[0, dp(4)])
             p_card.size_hint_x, p_card.width = None, dp(62)
             p_card.add_widget(make_label(day_data["day"], sp(10), TEXT_MUTED, halign="center", height_dp=14))
             p_card.add_widget(make_label(f"{day_data['oee']}%", sp(14), ACCENT_COLOR, bold=True, halign="center", height_dp=22))
             oee_row.add_widget(p_card)
+            
         oee_scroll.add_widget(oee_row)
         oee_box.add_widget(oee_scroll)
+        oee_box.add_widget(self.oee_detail_box)
         self.feed.add_widget(oee_box)
 
     def open_summary_drilldown(self, status_val, title_str):
+        if status_val == "UPTIME": return
         m_list = list(self.db["machines"].values())
         if status_val == "PM_TODAY":
             today_date = datetime.now().day
-            matched = [m for m in m_list if m.get("pm_day") == today_date and not pm_is_done(m)]
+            matched = [m for m in m_list if m.get("pm_day") == today_date and not m.get("pm_done_oct", False)]
+        elif status_val == "PM_MONTH":
+            today_date = datetime.now().day
+            matched = [m for m in m_list if m.get("pm_day", 0) > today_date and not m.get("pm_done_oct", False)]
         elif status_val == "OFF_MACHINES":
             matched = [m for m in m_list if m["status"] in ("IDLE", "BREAKDOWN", "MAINTENANCE")]
+        elif status_val == "BREAKDOWN":
+            matched = self.db["breakdown_history"]
         else:
             matched = [m for m in m_list if m["status"] == status_val]
         
@@ -440,36 +473,50 @@ class MachineTrackerApp(App):
         m_box = BoxLayout(orientation="vertical", size_hint_y=None, spacing=dp(6))
         m_box.bind(minimum_height=m_box.setter("height"))
         
+        pop = Popup(title="", separator_height=0, content=box, size_hint=(0.9, 0.6), background="", background_color=CARD_COLOR)
+
         if not matched:
-            m_box.add_widget(make_label("No machines found.", sp(12), TEXT_MUTED, height_dp=30))
+            m_box.add_widget(make_label("No records found.", sp(12), TEXT_MUTED, height_dp=30))
         else:
-            for mat in matched:
-                c = ModernBox(bg_color=CARD_INNER, radius=dp(8), auto_height=False, height=dp(42), padding=[dp(10), 0], orientation="horizontal")
-                c.add_widget(make_label(f"{mat['name']} ({mat['id']})", sp(12), TEXT_PRIMARY, bold=True, height_dp=42))
-                c.add_widget(make_status_pill(mat["status"], mat["status"]))
-                m_box.add_widget(c)
+            if status_val == "BREAKDOWN":
+                for b in matched:
+                    c = AnimatedCard(on_tap_cb=lambda bd=b, p=pop: (self.open_breakdown_detail_popup(bd), p.dismiss()), bg_color=CARD_INNER, radius=dp(8), auto_height=False, height=dp(58), padding=[dp(10), dp(6)], orientation="vertical", left_accent=STATUS_BREAKDOWN)
+                    c.add_widget(make_label(f"{b['machine_name']} ({b['machine_id']})", sp(12), TEXT_PRIMARY, bold=True, height_dp=20))
+                    c.add_widget(make_label(f"Issue: {b['issue']} · Tap for details", sp(10), STATUS_BREAKDOWN, height_dp=18))
+                    m_box.add_widget(c)
+            else:
+                for mat in matched:
+                    c = ModernBox(bg_color=CARD_INNER, radius=dp(8), auto_height=False, height=dp(42), padding=[dp(10), 0], orientation="horizontal")
+                    c.add_widget(make_label(f"{mat['name']} ({mat['id']})", sp(12), TEXT_PRIMARY, bold=True, height_dp=42))
+                    if status_val in ("PM_TODAY", "PM_MONTH"):
+                        btn_done = Button(text="Mark Done", size_hint=(None, None), size=(dp(80), dp(28)), pos_hint={"center_y": 0.5}, font_size=sp(10), bold=True, background_normal="", background_color=STATUS_RUNNING, color=BG_COLOR)
+                        btn_done.bind(on_release=lambda x, mid=mat["id"], p=pop: (self.mark_pm_complete(mid), p.dismiss()))
+                        c.add_widget(btn_done)
+                    else:
+                        c.add_widget(make_status_pill(mat["status"], mat["status"]))
+                    m_box.add_widget(c)
                 
         scroll_m.add_widget(m_box)
         box.add_widget(scroll_m)
 
         b_close = Button(text="Close", size_hint_y=None, height=dp(42), background_normal="", background_color=CARD_INNER, color=TEXT_PRIMARY, bold=True)
-        box.add_widget(b_close)
-
-        pop = Popup(title="", separator_height=0, content=box, size_hint=(0.9, 0.6), background="", background_color=CARD_COLOR)
         b_close.bind(on_release=pop.dismiss)
+        box.add_widget(b_close)
         self.open_tracked_popup(pop)
 
     def open_pm_day_details(self, day_num, has_pm, pm_map):
         box = BoxLayout(orientation="vertical", padding=dp(14), spacing=dp(10))
-        box.add_widget(make_label(f"PM Schedule for {day_num} {datetime.now().strftime('%b %Y')}", sp(14), ACCENT_COLOR, bold=True, height_dp=24))
+        box.add_widget(make_label(f"PM Schedule for Oct {day_num}, 2026", sp(14), ACCENT_COLOR, bold=True, height_dp=24))
         
         scroll_m = ScrollView(size_hint=(1, 1))
         m_box = BoxLayout(orientation="vertical", size_hint_y=None, spacing=dp(6))
         m_box.bind(minimum_height=m_box.setter("height"))
 
+        pop = Popup(title="", separator_height=0, content=box, size_hint=(0.9, 0.6), background="", background_color=CARD_COLOR)
+
         if has_pm:
             for mach in pm_map[day_num]:
-                is_done = pm_is_done(mach)
+                is_done = mach.get("pm_done_oct", False)
                 row = ModernBox(bg_color=CARD_INNER, radius=dp(8), auto_height=False, height=dp(48), padding=[dp(10), 0], orientation="horizontal")
                 info = BoxLayout(orientation="vertical", size_hint_x=1, spacing=dp(2))
                 info.add_widget(make_label(f"{mach['name']} ({mach['id']})", sp(12), TEXT_PRIMARY, bold=True, height_dp=22))
@@ -477,8 +524,8 @@ class MachineTrackerApp(App):
                 row.add_widget(info)
                 
                 if not is_done:
-                    btn_comp = Button(text="Complete", size_hint=(None, None), size=(dp(85), dp(32)), font_size=sp(10), bold=True, background_normal="", background_color=STATUS_RUNNING, color=BG_COLOR)
-                    btn_comp.bind(on_release=lambda x, mid=mach["id"]: self.complete_pm_and_close(mid))
+                    btn_comp = Button(text="Complete", size_hint=(None, None), size=(dp(85), dp(32)), pos_hint={"center_y": 0.5}, font_size=sp(10), bold=True, background_normal="", background_color=STATUS_RUNNING, color=BG_COLOR)
+                    btn_comp.bind(on_release=lambda x, mid=mach["id"], p=pop: (self.mark_pm_complete(mid), p.dismiss()))
                     row.add_widget(btn_comp)
                 m_box.add_widget(row)
         else:
@@ -488,37 +535,47 @@ class MachineTrackerApp(App):
         box.add_widget(scroll_m)
 
         b_close = Button(text="Close", size_hint_y=None, height=dp(42), background_normal="", background_color=CARD_INNER, color=TEXT_PRIMARY, bold=True)
-        box.add_widget(b_close)
-
-        pop = Popup(title="", separator_height=0, content=box, size_hint=(0.9, 0.6), background="", background_color=CARD_COLOR)
         b_close.bind(on_release=pop.dismiss)
+        box.add_widget(b_close)
         self.open_tracked_popup(pop)
 
-    def complete_pm_and_close(self, m_id):
-        if self.active_popup is not None:
-            self.active_popup.dismiss()
-        self.mark_pm_complete(m_id)
-
     def mark_pm_complete(self, m_id):
-        self.db["machines"][m_id]["pm_done_month"] = month_key()
+        self.db["machines"][m_id]["pm_done_oct"] = True
         self.save_data()
         self.show_toast(f"PM completed for {m_id}!")
         self.switch_tab("HOME", record_history=False)
 
     def animate_oee_detail(self, day_data):
+        self.oee_d_title.text = f"Day: {day_data['day']} Performance Pulse"
+        self.oee_d_stats.text = f"Availability: {day_data['avail']}%  |  Performance: {day_data['perf']}%  |  Quality: {day_data['qual']}%"
+        self.oee_detail_box.padding = [dp(10), dp(10)]
+        self.oee_d_title.height, self.oee_d_stats.height = dp(20), dp(20)
+        Animation(height=dp(60), opacity=1.0, duration=0.25, t="out_back").start(self.oee_detail_box)
+
+    def open_breakdown_detail_popup(self, b_data):
         box = BoxLayout(orientation="vertical", padding=dp(14), spacing=dp(8))
-        box.add_widget(make_label(f"Performance Pulse: {day_data['day']}", sp(14), ACCENT_COLOR, bold=True, height_dp=24))
-        box.add_widget(make_label(f"OEE Score: {day_data['oee']}%", sp(12), TEXT_PRIMARY, height_dp=20))
-        box.add_widget(make_label(f"Availability: {day_data['avail']}%", sp(12), STATUS_RUNNING, height_dp=20))
-        box.add_widget(make_label(f"Performance: {day_data['perf']}%", sp(12), ACCENT_COLOR, height_dp=20))
-        box.add_widget(make_label(f"Quality: {day_data['qual']}%", sp(12), TEXT_MUTED, height_dp=20))
+        box.add_widget(make_label(f"Breakdown Details: {b_data['machine_name']}", sp(14), STATUS_BREAKDOWN, bold=True, height_dp=24))
+        
+        scroll_m = ScrollView(size_hint=(1, 1))
+        m_box = BoxLayout(orientation="vertical", size_hint_y=None, spacing=dp(4))
+        m_box.bind(minimum_height=m_box.setter("height"))
+        
+        details = [
+            f"Machine ID: {b_data['machine_id']}", f"Date & Time: {b_data['date_time']}",
+            f"Issue: {b_data['issue']}", f"Root Cause (RCA): {b_data['rca']}",
+            f"Corrective Action: {b_data['corrective']}", f"Parts Changed?: {b_data['parts_changed']} ({b_data['parts_desc']})",
+            f"Parameter Change?: {b_data['param_changed']} ({b_data['param_desc']})", f"Work Description: {b_data['work_desc']}",
+            f"Completed Time: {b_data['completed_time']}", f"Responsible: {b_data['responsible']}"
+        ]
+        for d in details: m_box.add_widget(make_label(d, sp(11), TEXT_PRIMARY, height_dp=22))
+            
+        scroll_m.add_widget(m_box)
+        box.add_widget(scroll_m)
 
         b_close = Button(text="Close", size_hint_y=None, height=dp(42), background_normal="", background_color=CARD_INNER, color=TEXT_PRIMARY, bold=True)
-        box.add_widget(Widget())
-        box.add_widget(b_close)
-
-        pop = Popup(title="", separator_height=0, content=box, size_hint=(0.85, 0.45), background="", background_color=CARD_COLOR)
+        pop = Popup(title="", separator_height=0, content=box, size_hint=(0.92, 0.75), background="", background_color=CARD_COLOR)
         b_close.bind(on_release=pop.dismiss)
+        box.add_widget(b_close)
         self.open_tracked_popup(pop)
 
     def open_tracked_popup(self, pop):
@@ -545,53 +602,16 @@ class MachineTrackerApp(App):
         b_back = Button(text="<- Home", size_hint=(None, None), size=(dp(72), dp(34)), font_size=sp(10), bold=True, background_normal="", background_color=CARD_COLOR, color=ACCENT_COLOR)
         b_back.bind(on_release=lambda x: self.go_back_step())
         hdr.add_widget(b_back)
-        hdr.add_widget(make_label("BREAKDOWN LIST & DETAILS", sp(11), TEXT_MUTED, bold=True, height_dp=36))
+        hdr.add_widget(make_label("BREAKDOWN HISTORY", sp(11), TEXT_MUTED, bold=True, height_dp=36))
         self.feed.add_widget(hdr)
-        
-        if not self.db["breakdown_history"]:
-            self.feed.add_widget(make_label("No breakdowns logged.", sp(12), TEXT_MUTED, height_dp=30))
-        else:
-            for b in self.db["breakdown_history"]:
-                card = AnimatedCard(
-                    on_tap_cb=lambda bd=b: self.open_breakdown_detail_popup(bd),
-                    bg_color=CARD_INNER, border_color=BORDER_COLOR, radius=dp(10),
-                    auto_height=False, height=dp(58), orientation="vertical",
-                    padding=[dp(12), dp(6)], spacing=dp(2), left_accent=STATUS_BREAKDOWN
-                )
-                card.add_widget(make_label(f"{b['machine_name']} ({b['machine_id']})", sp(12), TEXT_PRIMARY, bold=True, height_dp=20))
-                card.add_widget(make_label(f"Issue: {b['issue']} · Tap for details", sp(10), STATUS_BREAKDOWN, height_dp=18))
-                self.feed.add_widget(card)
-
-    def open_breakdown_detail_popup(self, b_data):
-        box = BoxLayout(orientation="vertical", padding=dp(14), spacing=dp(8))
-        box.add_widget(make_label(f"Breakdown Details: {b_data['machine_name']}", sp(14), STATUS_BREAKDOWN, bold=True, height_dp=24))
-        
-        scroll_m = ScrollView(size_hint=(1, 1))
-        m_box = BoxLayout(orientation="vertical", size_hint_y=None, spacing=dp(4))
-        m_box.bind(minimum_height=m_box.setter("height"))
-        
-        details = [
-            f"Machine ID: {b_data['machine_id']}",
-            f"Date & Time: {b_data['date_time']}",
-            f"Issue: {b_data['issue']}",
-            f"Root Cause (RCA): {b_data['rca']}",
-            f"Corrective Action: {b_data['corrective']}",
-            f"Parts Changed?: {b_data['parts_changed']} ({b_data['parts_desc']})",
-            f"Parameter Change?: {b_data['param_changed']} ({b_data['param_desc']})",
-            f"Work Description: {b_data['work_desc']}",
-            f"Completed Time: {b_data['completed_time']}",
-            f"Responsible: {b_data['responsible']}"
-        ]
-        for d in details:
-            m_box.add_widget(make_label(d, sp(11), TEXT_PRIMARY, height_dp=22))
-            
-        scroll_m.add_widget(m_box)
-        box.add_widget(scroll_m)
-
-        b_close = Button(text="Close", size_hint_y=None, height=dp(42), background_normal="", background_color=CARD_INNER, color=TEXT_PRIMARY, bold=True)
-        pop = Popup(title="", separator_height=0, content=box, size_hint=(0.92, 0.75), background="", background_color=CARD_COLOR)
-        b_close.bind(on_release=pop.dismiss)
-        self.open_tracked_popup(pop)
+        for b in self.db["breakdown_history"]:
+            card = AnimatedCard(
+                on_tap_cb=lambda bd=b: self.open_breakdown_detail_popup(bd),
+                bg_color=CARD_INNER, border_color=BORDER_COLOR, radius=dp(10), auto_height=False, height=dp(58), orientation="vertical", padding=[dp(12), dp(6)], spacing=dp(2), left_accent=STATUS_BREAKDOWN
+            )
+            card.add_widget(make_label(f"{b['machine_name']} ({b['machine_id']})", sp(12), TEXT_PRIMARY, bold=True, height_dp=20))
+            card.add_widget(make_label(f"Issue: {b['issue']} · Tap for details", sp(10), STATUS_BREAKDOWN, height_dp=18))
+            self.feed.add_widget(card)
 
     def build_settings(self):
         hdr = BoxLayout(size_hint_y=None, height=dp(38), spacing=dp(8))
@@ -600,7 +620,7 @@ class MachineTrackerApp(App):
         hdr.add_widget(b_back)
         hdr.add_widget(make_label("SETTINGS", sp(11), TEXT_MUTED, bold=True, height_dp=36))
         self.feed.add_widget(hdr)
-        self.feed.add_widget(make_label("Configuration options active.", sp(12), TEXT_PRIMARY, height_dp=30))
+        self.feed.add_widget(make_label("Settings configuration active.", sp(12), TEXT_PRIMARY, height_dp=30))
 
 if __name__ == "__main__":
     try:
@@ -611,7 +631,7 @@ if __name__ == "__main__":
         class CrashApp(BaseApp):
             def build(self):
                 sv = ScrollView(size_hint=(1, 1))
-                l = Label(text="APP CRASH--+\n\n" + err_msg, color=(1,0.2,0.2,1), size_hint_y=None, font_size=sp(11), halign="left", valign="top", padding=(dp(20), dp(20)))
+                l = Label(text="APP CRASHED!\n\n" + err_msg, color=(1,0.2,0.2,1), size_hint_y=None, font_size=sp(11), halign="left", valign="top", padding=(dp(20), dp(20)))
                 l.bind(width=lambda *args: setattr(l, 'text_size', (l.width, None)))
                 l.bind(texture_size=lambda *args: setattr(l, 'height', l.texture_size[1]))
                 sv.add_widget(l)
