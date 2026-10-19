@@ -20,4 +20,4 @@ p4a.branch = v2024.01.21
 [buildozer]
 log_level = 2
 warn_on_root = 1
-icon.filename = %(source.dir)s/icon.png
+icon.filename = %(source.dir)s/assets/icon.png
